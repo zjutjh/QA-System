@@ -5,11 +5,12 @@ import (
 	"errors"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
+	"net/http"
 )
 
 func SetUserSession(c *gin.Context) error {
 	webSession := sessions.Default(c)
-	webSession.Options(sessions.Options{MaxAge: 3600 * 24 * 7, Path: "/api"})
+	webSession.Options(sessions.Options{MaxAge: 3600 * 24 * 7, Path: "/api", Secure: true, SameSite: http.SameSiteNoneMode})
 	webSession.Set("id", configService.GetConfig("admin"))
 	return webSession.Save()
 }
