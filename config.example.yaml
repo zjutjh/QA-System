@@ -1,0 +1,22 @@
+database:
+  name: ql_db
+  host: "127.0.0.1"
+  port: 3306
+  user: root
+  pass: "123456"
+
+session:
+  name: ql-session
+  driver: redis
+
+redis:
+  host: "127.0.0.1"
+  port: 6379
+  db: 0
+  user: root
+  pass:
+
+router:
+  port:
+
+allow_origins: "http://127.0.0.1:"
