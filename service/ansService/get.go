@@ -3,6 +3,7 @@ package ansService
 import (
 	"QA-system/config/database"
 	"QA-system/model"
+	"sort"
 )
 
 func GetAns(id int) ([][]model.Ans, error) {
@@ -22,6 +23,7 @@ func GetAns(id int) ([][]model.Ans, error) {
 		if flag.NumID != ans.NumID {
 			flag = ans
 			temp := ansList[index-length : index]
+			sort.Sort(model.AnsSort(temp))
 			data = append(data, temp)
 			length = 0
 		}
