@@ -39,7 +39,7 @@ func (d *Dao) GetSurveyByID(ctx context.Context, surveyID int) (*models.Survey, 
 func (d *Dao) GetSurveyByTitle(ctx context.Context, title string, num, size int) ([]models.Survey, *int64, error) {
 	var surveys []models.Survey
 	var sum int64
-	err := d.orm.WithContext(ctx).Model(models.Survey{}).Where("title like ?", "%"+title+"%").Order("CASE WHEN status = 2 THEN 0 ELSE 1 END, id DESC").Count(&sum).Limit(size).Offset((num-1)*size).Find(&surveys).Error
+	err := d.orm.WithContext(ctx).Model(models.Survey{}).Where("title like ?", "%"+title+"%").Order("CASE WHEN status = 2 THEN 0 ELSE 1 END").Count(&sum).Limit(size).Offset((num-1)*size).Find(&surveys).Error
 	return surveys, &sum, err
 }
 

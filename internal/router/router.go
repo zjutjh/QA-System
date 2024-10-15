@@ -30,7 +30,6 @@ func Init(r *gin.Engine) {
 			admin.POST("/create", a.CreateSurvey)
 			admin.PUT("/update/status", a.UpdateSurveyStatus)
 			admin.PUT("/update/questions", a.UpdateSurvey)
-			admin.PUT("/update/part", a.UpdateSurveyPart)
 			admin.GET("/list/answers", a.GetSurveyAnswers)
 			admin.GET("/statics/answers", a.GetSurveyStatistics)
 			admin.DELETE("/delete", a.DeleteSurvey)

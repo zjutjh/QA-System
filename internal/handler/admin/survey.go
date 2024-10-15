@@ -265,16 +265,25 @@ func UpdateSurvey(c *gin.Context) {
 		utils.JsonErrorResponse(c, code.NoPermission)
 		return
 	}
-	//判断问卷状态
-	if survey.Status != 1 {
-		c.Error(&gin.Error{Err: errors.New("问卷状态不为未发布"), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.StatusRepeatError)
-		return
-	}
-	// 判断问卷的填写数量是否为零
-	if survey.Num != 0 {
-		c.Error(&gin.Error{Err: errors.New("问卷已有填写数量"), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.SurveyNumError)
+	//判断用户权限
+	if user.AdminType == 2 {
+		// 	超管可以直接修改问卷
+	} else if user.AdminType == 1 && survey.UserID == user.ID {
+		//判断问卷状态
+		if survey.Status != 1 {
+			c.Error(&gin.Error{Err: errors.New("问卷状态不为未发布"), Type: gin.ErrorTypeAny})
+			utils.JsonErrorResponse(c, code.StatusRepeatError)
+			return
+		}
+		// 判断问卷的填写数量是否为零
+		if survey.Num != 0 {
+			c.Error(&gin.Error{Err: errors.New("问卷已有填写数量"), Type: gin.ErrorTypeAny})
+			utils.JsonErrorResponse(c, code.SurveyNumError)
+			return
+		}
+	} else {
+		c.Error(&gin.Error{Err: errors.New(user.Username + "无权限"), Type: gin.ErrorTypeAny})
+		utils.JsonErrorResponse(c, code.NoPermission)
 		return
 	}
 	//解析时间转换为中国时间(UTC+8)
@@ -310,58 +319,6 @@ func UpdateSurvey(c *gin.Context) {
 	utils.JsonSuccessResponse(c, nil)
 }
 
-type UpdateSurveyPartData struct {
-	ID        int            `json:"id" binding:"required"`
-	Title     string         `json:"title"`
-	Desc      string         `json:"desc" `
-	Img       string         `json:"img" `
-	Time      string         `json:"time"`
-}
-
-func UpdateSurveyPart(c *gin.Context) {
-	var data UpdateSurveyPartData
-	err := c.ShouldBindJSON(&data)
-	if err != nil {
-		c.Error(&gin.Error{Err: errors.New("获取参数失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.ParamError)
-		return
-	}
-	//鉴权
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		c.Error(&gin.Error{Err: errors.New("获取用户缓存信息失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.NotLogin)
-		return
-	}
-	// 获取问卷
-	survey, err := service.GetSurveyByID(data.ID)
-	if err != nil {
-		c.Error(&gin.Error{Err: errors.New("获取问卷信息失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.ServerError)
-		return
-	}
-	//判断权限
-	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) && !service.UserInManage(user.ID, survey.ID) {
-		c.Error(&gin.Error{Err: errors.New(user.Username+"无权限"), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.NoPermission)
-		return
-	}
-	//解析时间转换为中国时间(UTC+8)
-	ddlTime, err := time.Parse(time.RFC3339, data.Time)
-	if err != nil {
-		c.Error(&gin.Error{Err: errors.New("时间解析失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.ServerError)
-		return
-	}
-	//修改问卷
-	err = service.UpdateSurveyPart(data.ID, data.Title, data.Desc, data.Img, ddlTime)
-	if err != nil {
-		c.Error(&gin.Error{Err: errors.New("修改问卷失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
-		utils.JsonErrorResponse(c, code.ServerError)
-		return
-	}
-	utils.JsonSuccessResponse(c, nil)
-}
 
 // 删除问卷
 type DeleteSurveyData struct {
@@ -486,17 +443,20 @@ func GetAllSurvey(c *gin.Context) {
 		return
 	}
 	// 获取问卷
-	response := make([]interface{}, 0)
+	var response []interface{}
+	var surveys []models.Survey
 	var totalPageNum *int64
 	if user.AdminType == 2 {
-		response, totalPageNum, err = service.GetAllSurvey(data.PageNum, data.PageSize, data.Title)
+		surveys, totalPageNum, err = service.GetAllSurvey(data.PageNum, data.PageSize, data.Title)
 		if err != nil {
 			c.Error(&gin.Error{Err: errors.New("获取问卷信息失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
 			utils.JsonErrorResponse(c, code.ServerError)
 			return
 		}
+		surveys = service.SortSurvey(surveys)
+		response = service.GetSurveyResponse(surveys)
 	} else {
-		response, err = service.GetAllSurveyByUserID(user.ID)
+		surveys, err = service.GetAllSurveyByUserID(user.ID)
 		if err != nil {
 			c.Error(&gin.Error{Err: errors.New("获取问卷信息失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
 			utils.JsonErrorResponse(c, code.ServerError)
@@ -515,14 +475,10 @@ func GetAllSurvey(c *gin.Context) {
 				utils.JsonErrorResponse(c, code.ServerError)
 				return
 			}
-			managedSurveyResponse := map[string]interface{}{
-				"id":     managedSurvey.ID,
-				"title":  managedSurvey.Title,
-				"status": managedSurvey.Status,
-				"num":    managedSurvey.Num,
-			}
-			response = append(response, managedSurveyResponse)
+			surveys = append(surveys, *managedSurvey)
 		}
+		surveys = service.SortSurvey(surveys)
+		response = service.GetSurveyResponse(surveys)
 		response, totalPageNum = service.ProcessResponse(response, data.PageNum, data.PageSize, data.Title)
 	}
 

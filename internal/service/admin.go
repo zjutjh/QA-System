@@ -9,12 +9,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/xuri/excelize/v2"
 	"os"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/xuri/excelize/v2"
 )
 
 func GetAdminByUsername(username string) (*models.User, error) {
@@ -248,10 +249,8 @@ func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.
 	return dao.AnswersResonse{QuestionAnswers: data, Time: time}, total, nil
 }
 
-func GetAllSurveyByUserID(userId int) ([]interface{}, error) {
-	surveys, err := d.GetAllSurveyByUserID(ctx, userId)
-	response := getSurveyResponse(surveys)
-	return response, err
+func GetAllSurveyByUserID(userId int) ([]models.Survey, error) {
+	return d.GetAllSurveyByUserID(ctx, userId)
 }
 
 func ProcessResponse(response []interface{}, pageNum, pageSize int, title string) ([]interface{}, *int64) {
@@ -265,22 +264,8 @@ func ProcessResponse(response []interface{}, pageNum, pageSize int, title string
 		}
 		response = filteredResponse
 	}
-	num := int64(len(response))
-	sort.Slice(response, func(i, j int) bool {
-		return response[i].(map[string]interface{})["id"].(int) > response[j].(map[string]interface{})["id"].(int)
-	})
-	var sortedResponse []interface{}
-	var status2Response, status1Response []interface{}
-	for _, item := range response {
-		itemMap := item.(map[string]interface{})
-		if itemMap["status"].(int) == 2 {
-			status2Response = append(status2Response, item)
-		} else {
-			status1Response = append(status1Response, item)
-		}
-	}
-	sortedResponse = append(status2Response, status1Response...)
 
+	num := int64(len(response))
 	if pageNum < 1 {
 		pageNum = 1
 	}
@@ -289,27 +274,48 @@ func ProcessResponse(response []interface{}, pageNum, pageSize int, title string
 	}
 	startIdx := (pageNum - 1) * pageSize
 	endIdx := startIdx + pageSize
-	if startIdx > len(sortedResponse) {
+	if startIdx > len(response) {
 		return []interface{}{}, &num // 如果起始索引超出范围，返回空数据
 	}
-	if endIdx > len(sortedResponse) {
-		endIdx = len(sortedResponse)
+	if endIdx > len(response) {
+		endIdx = len(response)
 	}
-	pagedResponse := sortedResponse[startIdx:endIdx]
+	pagedResponse := response[startIdx:endIdx]
 
 	return pagedResponse, &num
 }
 
-func GetAllSurvey(pageNum, pageSize int, title string) ([]interface{}, *int64, error) {
-	surveys, num, error := d.GetSurveyByTitle(ctx, title, pageNum, pageSize)
-	if error != nil {
-		return nil, nil, error
-	}
-	response := getSurveyResponse(surveys)
-	return response, num, nil
+func GetAllSurvey(pageNum, pageSize int, title string) ([]models.Survey, *int64, error) {
+	return d.GetSurveyByTitle(ctx, title, pageNum, pageSize)
 }
 
-func getSurveyResponse(surveys []models.Survey) []interface{} {
+func SortSurvey(originalSurveys []models.Survey) []models.Survey {
+	sort.Slice(originalSurveys, func(i, j int) bool {
+		return originalSurveys[i].ID > originalSurveys[j].ID
+	})
+
+	status1Surveys := make([]models.Survey, 0)
+	status2Surveys := make([]models.Survey, 0)
+	status3Surveys := make([]models.Survey, 0)
+	for _, survey := range originalSurveys {
+		if survey.Deadline.Before(time.Now()) {
+			survey.Status = 3
+			status3Surveys = append(status3Surveys, survey)
+		}
+
+		if survey.Status == 1 {
+			status1Surveys = append(status1Surveys, survey)
+		} else if survey.Status == 2 {
+			status2Surveys = append(status2Surveys, survey)
+		}
+	}
+
+	status2Surveys = append(status2Surveys, status1Surveys...)
+	sortedSurveys := append(status2Surveys, status3Surveys...)
+	return sortedSurveys
+}
+
+func GetSurveyResponse(surveys []models.Survey) []interface{} {
 	response := make([]interface{}, 0)
 	for _, survey := range surveys {
 		surveyResponse := map[string]interface{}{
