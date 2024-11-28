@@ -28,6 +28,8 @@ func Init(r *gin.Engine) {
 			api.POST("/admin/update", a.UpdatePassword)
 			api.POST("/admin/reset", a.ResetPassword)
 			admin.POST("/create", a.CreateSurvey)
+			admin.GET("/create", a.GetQuestionPre)
+			admin.POST("/new", a.CreateQuestionPre)
 			admin.PUT("/update/status", a.UpdateSurveyStatus)
 			admin.PUT("/update/questions", a.UpdateSurvey)
 			admin.GET("/list/answers", a.GetSurveyAnswers)

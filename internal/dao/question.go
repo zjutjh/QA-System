@@ -51,3 +51,21 @@ func (d *Dao) DeleteQuestionBySurveyID(ctx context.Context, surveyID int) error 
 	err := d.orm.WithContext(ctx).Where("survey_id = ?", surveyID).Delete(&models.Question{}).Error
 	return err
 }
+
+func (d *Dao) CreateType(ctx context.Context,name string,value string)error{
+	//如果type已经存在则直接更新当前type的value
+	var t models.Type
+	err := d.orm.WithContext(ctx).Where("type = ?",name).First(&t).Error
+	if err == nil{
+		err = d.orm.WithContext(ctx).Model(&t).Update("value",value).Error
+		return err
+	}
+	err = d.orm.WithContext(ctx).Create(&models.Type{Type:name,Value:value}).Error
+	return err
+}
+
+func (d *Dao) GetType(ctx context.Context,name string)(string,error){
+	var t models.Type
+	err := d.orm.WithContext(ctx).Where("type = ?",name).First(&t).Error
+	return t.Value,err
+}
