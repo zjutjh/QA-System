@@ -9,8 +9,9 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-func HandleSubmitSurveyTask(ctx context.Context, t *asynq.Task) error {
-	var p SubmitSurveyPayload
+// HandleSubmitSurveyTask 处理提交问卷任务
+func HandleSubmitSurveyTask(_ context.Context, t *asynq.Task) error {
+	var p submitSurveyPayload
 	if err := json.Unmarshal(t.Payload(), &p); err != nil {
 		return err
 	}

@@ -11,7 +11,6 @@ build-windows:
 build-macos:
 	GOOS=0 GOOS=linux GOARCH=amd64 go build -o main  main.go
 
-.PHONY: build build-linux
 
 # 格式化代码并检查风格
 fmt:

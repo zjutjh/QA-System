@@ -26,6 +26,7 @@ func (d *Dao) CreateUser(ctx context.Context, user *models.User) error {
 	return result.Error
 }
 
+// UpdateUserPassword 更新用户密码
 func (d *Dao) UpdateUserPassword(ctx context.Context, uid int, password string) error {
 	result := d.orm.WithContext(ctx).Model(&models.User{}).Where("id = ?", uid).Update("password", password)
 	return result.Error

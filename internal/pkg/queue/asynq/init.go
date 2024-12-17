@@ -9,10 +9,13 @@ import (
 )
 
 var (
+	// Client 客户端
 	Client *asynq.Client
-	Srv    *asynq.Server
+	// Srv 服务端
+	Srv *asynq.Server
 )
 
+// Init 初始化asynq
 func Init() {
 	cfg := NewConfig()
 	port := strconv.Itoa(cfg.port)
@@ -31,8 +34,8 @@ func Init() {
 			Password: cfg.password,
 		},
 		asynq.Config{
-			Concurrency:    10,                          //并发数
-			RetryDelayFunc: asynq.DefaultRetryDelayFunc, //重试延迟
+			Concurrency:    10,                          // 并发数
+			RetryDelayFunc: asynq.DefaultRetryDelayFunc, // 重试延迟
 		},
 	)
 	mux := asynq.NewServeMux()

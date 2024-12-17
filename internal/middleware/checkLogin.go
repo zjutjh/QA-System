@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// CheckLogin 检查登录
 func CheckLogin(c *gin.Context) {
 	isLogin := service.CheckUserSession(c)
 	if !isLogin {

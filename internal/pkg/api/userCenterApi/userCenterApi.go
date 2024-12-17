@@ -12,7 +12,7 @@ const (
 	VerifyEmail        string = "api/verify/email"
 	ReSendEmail        string = "api/email"
 	Auth               string = "api/auth"
-	RePass             string = "api/changePwd"
+	RePass             string = "api/changePwd" //nolint
 	RePassWithoutEmail string = "api/repass"
 	DelAccount         string = "api/del"
 	OAuth              string = "api/oauth"

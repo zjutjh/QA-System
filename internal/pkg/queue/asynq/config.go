@@ -2,6 +2,7 @@ package asynq
 
 import global "QA-System/internal/global/config"
 
+// Config asynq配置
 type Config struct {
 	host     string
 	port     int
@@ -10,6 +11,7 @@ type Config struct {
 	password string
 }
 
+// NewConfig 创建一个新的asynq配置
 func NewConfig() *Config {
 	return &Config{
 		host:     global.Config.GetString("redis.host"),

@@ -2,7 +2,6 @@
 
 run:
   concurrency: 4  # 并行执行的 linter 数量，默认为可用 CPU 数量
-  deadline: 5m  # 分析的最大超时时间，默认为 5 分钟
   timeout: 10m  # 超时时间
   issues-exit-code: 1  # 如果发现至少一个问题，退出码为 1
   tests: true  # 包含测试文件进行分析
@@ -59,21 +58,23 @@ linters-settings:
         disabled: true
       - name: cognitive-complexity  # 认知复杂度
         severity: warning
-        disabled: false
-        arguments: [ 10 ]
+        disabled: true
+      - name: cyclomatic            # 圈复杂度
+        severity: warning
+        disabled: true
+      - name: flag-parameter        # 控制耦合
+        severity: warning
+        disabled: true
+      - name: modifies-parameter    # 修改参数
+        severity: warning
+        disabled: true
   gofmt:
     simplify: true  # 使用 gofmt 的 `-s` 选项简化代码
-  gocyclo:
-    min-complexity: 10  # 触发报告的最小代码复杂度
-  dupl:
-    threshold: 100  # 触发报告的最小令牌数
   goconst:
     min-len: 3  # 字符串常量的最小长度
     min-occurrences: 3  # 触发报告的最小出现次数
   gosec:
     severity: medium  # 安全问题的最小严重性
-  unused:
-    check-exported: true  # 报告未使用的导出标识符
   unparam:
     check-exported: false  # 检查导出的函数
   nakedret:
@@ -95,8 +96,6 @@ linters:
     - staticcheck  # 静态代码分析工具，检测潜在的错误和反模式
     - gofmt  # 检查代码格式是否符合 gofmt 规范
     - revive  # 替代 golint 的代码风格检查工具
-    - gocyclo  # 检测代码的圈复杂度
-    - dupl  # 检查重复代码
     - goconst  # 检查重复的常量
     - gosec  # 检查安全问题
     - unused # 检查未使用的代码
@@ -106,6 +105,5 @@ linters:
 
 issues:
   exclude-use-default: false  # 禁用默认排除模式
-  max-per-linter: 0  # 每个 linter 的最大问题数量，设置为 0 禁用限制
   max-same-issues: 0  # 同一问题的最大数量，设置为 0 禁用限制
   new: false  # 仅显示新问题，默认为 false

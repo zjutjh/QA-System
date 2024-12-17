@@ -6,6 +6,7 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Config 全局配置变量
 var Config = viper.New()
 
 func init() {

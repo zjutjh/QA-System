@@ -9,9 +9,10 @@ mysql:
   user: root
   pass:
 
-session:
-  name: QA-session
-  driver: redis
+
+ session:
+   name: QA-session
+   secret: secret
 
 redis:
   host: "127.0.0.1"

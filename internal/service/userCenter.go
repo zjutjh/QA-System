@@ -16,7 +16,7 @@ type UserCenterResponse struct {
 }
 
 // FetchHandleOfPost 向用户中心发送 POST 请求
-func FetchHandleOfPost(form map[string]any, url string) (*UserCenterResponse, error) {
+func FetchHandleOfPost(form map[string]any, webUrl string) (*UserCenterResponse, error) {
 	client := request.NewUnSafe()
 	var rc UserCenterResponse
 
@@ -25,7 +25,7 @@ func FetchHandleOfPost(form map[string]any, url string) (*UserCenterResponse, er
 		SetHeader("Content-Type", "application/json").
 		SetBody(form).
 		SetResult(&rc).
-		Post(userCenterApi.UserCenterHost + url)
+		Post(userCenterApi.UserCenterHost + webUrl)
 
 	// 检查请求错误
 	if err != nil || resp.IsError() {
@@ -36,7 +36,7 @@ func FetchHandleOfPost(form map[string]any, url string) (*UserCenterResponse, er
 	return &rc, nil
 }
 
-// 统一登录验证
+// Oauth 统一登录验证
 func Oauth(sid, password string) error {
 	loginUrl, err := url.Parse(userCenterApi.OAuth)
 	if err != nil {

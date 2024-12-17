@@ -16,10 +16,12 @@ var (
 	d   *dao.Dao
 )
 
-func ServiceInit(db *gorm.DB, mdb *mongo.Database) {
+// Init 函数用于初始化服务。
+func Init(db *gorm.DB, mdb *mongo.Database) {
 	d = dao.New(db, mdb)
 }
 
+// GetConfigUrl 获取配置url
 func GetConfigUrl() string {
 	url := GetRedis("url")
 	if url == "" {
@@ -29,6 +31,7 @@ func GetConfigUrl() string {
 	return url
 }
 
+// GetConfigKey 获取配置key
 func GetConfigKey() string {
 	key := GetRedis("key")
 	if key == "" {
@@ -38,6 +41,7 @@ func GetConfigKey() string {
 	return key
 }
 
+// SetRedis 设置存储在redis的值
 func SetRedis(key string, value string) bool {
 	t := int64(900)
 	expire := time.Duration(t) * time.Second
@@ -47,6 +51,7 @@ func SetRedis(key string, value string) bool {
 	return true
 }
 
+// GetRedis 获取存储在redis的值
 func GetRedis(key string) string {
 	result, err := r.RedisClient.Get(ctx, key).Result()
 	if err != nil {

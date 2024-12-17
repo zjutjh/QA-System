@@ -7,8 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Init 初始化路由
 func Init(r *gin.Engine) {
-
 	const pre = "/api"
 
 	api := r.Group(pre)
@@ -43,7 +43,6 @@ func Init(r *gin.Engine) {
 			admin.GET("/list/questions", a.GetAllSurvey)
 			admin.GET("/single/question", a.GetSurvey)
 			admin.GET("/download", a.DownloadFile)
-
 		}
 	}
 }

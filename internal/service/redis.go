@@ -8,6 +8,7 @@ import (
 	"QA-System/internal/pkg/redis"
 )
 
+// GetUserLimit 获取用户的对该问卷的访问次数
 func GetUserLimit(c context.Context, stu_id string, sid int) (int, error) {
 	// 从 redis 中获取用户的对该问卷的访问次数
 	item := "survey:" + strconv.Itoa(sid) + ":stu_id:" + stu_id
@@ -16,6 +17,7 @@ func GetUserLimit(c context.Context, stu_id string, sid int) (int, error) {
 	return limit, err
 }
 
+// SetUserLimit 设置用户的对该问卷的访问次数
 func SetUserLimit(c context.Context, stu_id string, sid int, limit int) error {
 	// 设置用户的对该问卷的访问次数
 	item := "survey:" + strconv.Itoa(sid) + ":stu_id:" + stu_id
@@ -27,10 +29,10 @@ func SetUserLimit(c context.Context, stu_id string, sid int, limit int) error {
 	return err
 }
 
+// InscUserLimit 更新用户的对该问卷的访问次数+1
 func InscUserLimit(c context.Context, stu_id string, sid int) error {
 	// 更新用户的对该问卷的访问次数
 	item := "survey:" + strconv.Itoa(sid) + ":stu_id:" + stu_id
 	err := redis.RedisClient.Incr(c, item).Err()
 	return err
-
 }

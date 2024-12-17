@@ -7,8 +7,10 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.uber.org/zap"
 )
 
+// Answer 各问题答卷模型
 type Answer struct {
 	QuestionID int    `json:"question_id" bson:"questionid"` // 问题ID
 	SerialNum  int    `json:"serial_num" bson:"serialnum"`   // 问题序号
@@ -16,6 +18,7 @@ type Answer struct {
 	Content    string `json:"content" bson:"content"`        // 答案内容
 }
 
+// AnswerSheet mongodb答卷表模型
 type AnswerSheet struct {
 	SurveyID int      `json:"survey_id" bson:"surveyid"` // 问卷ID
 	Time     string   `json:"time" bson:"time"`          // 答卷时间
@@ -23,12 +26,14 @@ type AnswerSheet struct {
 	Answers  []Answer `json:"answers" bson:"answers"`    // 答案列表
 }
 
+// QuestionAnswers 问题答案模型
 type QuestionAnswers struct {
 	Title        string   `json:"title"`
 	QuestionType int      `json:"question_type"`
 	Answers      []string `json:"answers"`
 }
 
+// AnswersResonse 答案响应模型
 type AnswersResonse struct {
 	QuestionAnswers []QuestionAnswers `json:"question_answers"`
 	Time            []string          `json:"time"`
@@ -114,8 +119,10 @@ func contains(arr []int, item int) bool {
 }
 
 // GetAnswerSheetBySurveyID 根据问卷ID分页获取答卷
-func (d *Dao) GetAnswerSheetBySurveyID(ctx context.Context, surveyID int, pageNum int, pageSize int, text string, unique bool) ([]AnswerSheet, *int64, error) {
-	var answerSheets []AnswerSheet
+func (d *Dao) GetAnswerSheetBySurveyID(
+	ctx context.Context, surveyID int, pageNum int, pageSize int, text string, unique bool) (
+	[]AnswerSheet, *int64, error) {
+	answerSheets := make([]AnswerSheet, 0)
 	filter := bson.M{"surveyid": surveyID}
 
 	// 如果 text 不为空，添加 text 的查询条件
@@ -150,7 +157,13 @@ func (d *Dao) GetAnswerSheetBySurveyID(ctx context.Context, surveyID int, pageNu
 	if err != nil {
 		return nil, nil, err
 	}
-	defer cur.Close(ctx)
+	defer func(cur *mongo.Cursor, ctx context.Context) {
+		err := cur.Close(ctx)
+		if err != nil {
+			zap.L().Error("Failed to close cursor", zap.Error(err))
+			return
+		}
+	}(cur, ctx)
 
 	// 迭代查询结果
 	for cur.Next(ctx) {

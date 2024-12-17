@@ -11,19 +11,20 @@ import (
 	"gorm.io/gorm"
 )
 
-type CreatePermissionData struct {
+type createPermissionData struct {
 	UserName string `json:"username" binding:"required"`
 	SurveyID int    `json:"survey_id" binding:"required"`
 }
 
+// CreatePermission 创建权限
 func CreatePermission(c *gin.Context) {
-	var data CreatePermissionData
+	var data createPermissionData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
 		return
 	}
-	//鉴权
+	// 鉴权
 	admin, err := service.GetUserSession(c)
 	if err != nil {
 		code.AbortWithException(c, code.NotLogin, err)
@@ -49,13 +50,14 @@ func CreatePermission(c *gin.Context) {
 	}
 	err = service.CheckPermission(user.ID, data.SurveyID)
 	if err == nil {
-		code.AbortWithException(c, code.PermissionExist, errors.New(fmt.Sprintf("用户%d已有问卷%d权限", user.ID, data.SurveyID)))
+		code.AbortWithException(c, code.PermissionExist,
+			fmt.Errorf("用户%d已有问卷%d权限", user.ID, data.SurveyID))
 		return
 	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		code.AbortWithException(c, code.ServerError, err)
 		return
 	}
-	//创建权限
+	// 创建权限
 	err = service.CreatePermission(user.ID, data.SurveyID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
@@ -64,19 +66,20 @@ func CreatePermission(c *gin.Context) {
 	utils.JsonSuccessResponse(c, nil)
 }
 
-type DeletePermissionData struct {
+type deletePermissionData struct {
 	UserName string `form:"username" binding:"required"`
 	SurveyID int    `form:"survey_id" binding:"required"`
 }
 
+// DeletePermission 删除权限
 func DeletePermission(c *gin.Context) {
-	var data DeletePermissionData
+	var data deletePermissionData
 	err := c.ShouldBindQuery(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
 		return
 	}
-	//鉴权
+	// 鉴权
 	admin, err := service.GetUserSession(c)
 	if err != nil {
 		code.AbortWithException(c, code.NotLogin, err)
@@ -100,13 +103,13 @@ func DeletePermission(c *gin.Context) {
 		code.AbortWithException(c, code.PermissionBelong, errors.New("不能删除问卷所有者的权限"))
 		return
 	}
-	//查询权限
+	// 查询权限
 	err = service.CheckPermission(user.ID, data.SurveyID)
 	if err != nil {
 		code.AbortWithException(c, code.PermissionNotExist, errors.New(user.Username+"权限不存在"))
 		return
 	}
-	//删除权限
+	// 删除权限
 	err = service.DeletePermission(user.ID, data.SurveyID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)

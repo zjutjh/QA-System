@@ -10,14 +10,15 @@ import (
 type driver string
 
 const (
+	// Memory 内存
 	Memory driver = "memory"
-	Redis  driver = "redis"
+	// Redis redis缓存
+	Redis driver = "redis"
 )
 
-var defaultName = "wejh-session"
+var defaultName = "qa-session"
 
 func getConfig() WeJHSDK.SessionInfoConfig {
-
 	wc := WeJHSDK.SessionInfoConfig{}
 	wc.Driver = string(Memory)
 	if global.Config.IsSet("session.driver") {
@@ -29,7 +30,7 @@ func getConfig() WeJHSDK.SessionInfoConfig {
 		wc.Name = strings.ToLower(global.Config.GetString("session.name"))
 	}
 
-	wc.SecretKey = "secret"
+	wc.SecretKey = strings.ToLower(global.Config.GetString("session.secret"))
 
 	wc.RedisConfig = getRedisConfig()
 
@@ -37,23 +38,23 @@ func getConfig() WeJHSDK.SessionInfoConfig {
 }
 
 func getRedisConfig() WeJHSDK.RedisInfoConfig {
-	Info := WeJHSDK.RedisInfoConfig{
+	info := WeJHSDK.RedisInfoConfig{
 		Host:     "localhost",
 		Port:     "6379",
 		DB:       0,
 		Password: "",
 	}
 	if global.Config.IsSet("redis.host") {
-		Info.Host = global.Config.GetString("redis.host")
+		info.Host = global.Config.GetString("redis.host")
 	}
 	if global.Config.IsSet("redis.port") {
-		Info.Port = global.Config.GetString("redis.port")
+		info.Port = global.Config.GetString("redis.port")
 	}
 	if global.Config.IsSet("redis.db") {
-		Info.DB = global.Config.GetInt("redis.db")
+		info.DB = global.Config.GetInt("redis.db")
 	}
 	if global.Config.IsSet("redis.pass") {
-		Info.Password = global.Config.GetString("redis.pass")
+		info.Password = global.Config.GetString("redis.pass")
 	}
-	return Info
+	return info
 }

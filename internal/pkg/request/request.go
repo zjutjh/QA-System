@@ -76,13 +76,12 @@ func New() Client {
 	s.OnAfterResponse(RestyLogMiddleware)
 
 	return s
-
 }
 
 // NewUnSafe 初始化一个 Resty 客户端并跳过 TLS 证书验证
 func NewUnSafe() Client {
 	s := New()
-	s.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	s.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}) //nolint:gosec
 	return s
 }
 
@@ -96,7 +95,8 @@ func RestyLogMiddleware(_ *resty.Client, resp *resty.Response) error {
 	if resp.IsError() {
 		method := resp.Request.Method
 		url := resp.Request.URL
-		zap.L().Error("请求出现错误", zap.String("method", method), zap.String("url", url), zap.Int64("time_spent(ms)", resp.Time().Milliseconds()))
+		zap.L().Error("请求出现错误", zap.String("method", method),
+			zap.String("url", url), zap.Int64("time_spent(ms)", resp.Time().Milliseconds()))
 	}
 	return nil
 }

@@ -18,14 +18,15 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-type SubmitSurveyData struct {
+type submitSurveyData struct {
 	ID            int                 `json:"id" binding:"required"`
 	Token         string              `json:"token"`
 	QuestionsList []dao.QuestionsList `json:"questions_list"`
 }
 
+// SubmitSurvey 提交问卷
 func SubmitSurvey(c *gin.Context) {
-	var data SubmitSurveyData
+	var data submitSurveyData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
@@ -38,7 +39,7 @@ func SubmitSurvey(c *gin.Context) {
 		return
 	}
 	var stuId string
-	if survey.Verify == true {
+	if survey.Verify {
 		stuId, err = utils.ParseJWT(data.Token)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
@@ -76,33 +77,36 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 		if question.SerialNum != q.SerialNum {
-			code.AbortWithException(c, code.ServerError, errors.New("问题序号"+strconv.Itoa(question.ID)+"和"+strconv.Itoa(q.SerialNum)+"不一致"))
+			code.AbortWithException(c, code.ServerError,
+				errors.New("问题序号"+strconv.Itoa(question.ID)+"和"+strconv.Itoa(q.SerialNum)+"不一致"))
 			return
 		}
 		if question.SurveyID != survey.ID {
-			code.AbortWithException(c, code.ServerError, errors.New("问题"+strconv.Itoa(question.SerialNum)+"不属于该问卷"))
+			code.AbortWithException(c, code.ServerError,
+				errors.New("问题"+strconv.Itoa(question.SerialNum)+"不属于该问卷"))
 			return
 		}
 		// 判断必填字段是否为空
 		if question.Required && q.Answer == "" {
-			code.AbortWithException(c, code.ServerError, errors.New("问题"+strconv.Itoa(q.SerialNum)+"必填字段为空"))
+			code.AbortWithException(c, code.ServerError,
+				errors.New("问题"+strconv.Itoa(q.SerialNum)+"必填字段为空"))
 			return
 		}
 		// 判断多选题选项数量是否符合要求
 		if question.QuestionType == 2 {
-			length := len(strings.Split(q.Answer, "┋"))
-			if question.MinimumOption != 0 && length < int(question.MinimumOption) {
+			length := uint(len(strings.Split(q.Answer, "┋")))
+			if question.MinimumOption != 0 && length < question.MinimumOption {
 				code.AbortWithException(c, code.OptionNumError, errors.New("问题"+strconv.Itoa(q.SerialNum)+"选项数量不符合要求"))
 				return
 			}
-			if question.MaximumOption != 0 && length > int(question.MaximumOption) {
+			if question.MaximumOption != 0 && length > question.MaximumOption {
 				code.AbortWithException(c, code.OptionNumError, errors.New("问题"+strconv.Itoa(q.SerialNum)+"选项数量不符合要求"))
 				return
 			}
 		}
 	}
 	flag := false
-	if survey.DailyLimit != 0 && survey.Verify == true {
+	if survey.DailyLimit != 0 && survey.Verify {
 		limit, err := service.GetUserLimit(c, stuId, survey.ID)
 		if err != nil && !errors.Is(err, redis.Nil) {
 			code.AbortWithException(c, code.ServerError, err)
@@ -119,7 +123,7 @@ func SubmitSurvey(c *gin.Context) {
 	if survey.Type != 1 {
 		// 创建并入队任务
 		task, err := queue.NewSubmitSurveyTask(data.ID, data.QuestionsList)
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			code.AbortWithException(c, code.StuIDRedisError, err)
 			return
 		} else if err != nil {
@@ -131,7 +135,6 @@ func SubmitSurvey(c *gin.Context) {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
-
 	} else {
 		err = service.SubmitSurvey(data.ID, data.QuestionsList, time.Now().Format("2006-01-02 15:04:05"))
 		if err != nil {
@@ -145,7 +148,7 @@ func SubmitSurvey(c *gin.Context) {
 		}
 	}
 
-	if survey.Verify == true && survey.DailyLimit != 0 {
+	if survey.Verify && survey.DailyLimit != 0 {
 		if flag {
 			err = service.SetUserLimit(c, stuId, survey.ID, 0)
 			if err != nil {
@@ -158,7 +161,7 @@ func SubmitSurvey(c *gin.Context) {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
-	} else if survey.Verify == true {
+	} else if survey.Verify {
 		err = service.CreateOauthRecord(stuId, time.Now(), data.ID)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
@@ -168,21 +171,13 @@ func SubmitSurvey(c *gin.Context) {
 	utils.JsonSuccessResponse(c, nil)
 }
 
-type GetSurveyData struct {
+type getSurveyData struct {
 	ID int `form:"id" binding:"required"`
 }
 
-type SurveyData struct {
-	ID        int            `json:"id"`
-	Time      string         `json:"time"`
-	Desc      string         `json:"desc"`
-	Img       string         `json:"img"`
-	Questions []dao.Question `json:"questions"`
-}
-
-// 用户获取问卷
+// GetSurvey 用户获取问卷
 func GetSurvey(c *gin.Context) {
-	var data GetSurveyData
+	var data getSurveyData
 	err := c.ShouldBindQuery(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
@@ -215,16 +210,16 @@ func GetSurvey(c *gin.Context) {
 		return
 	}
 	// 构建问卷响应
-	questionsResponse := make([]map[string]interface{}, 0)
+	questionsResponse := make([]map[string]any, 0)
 	for _, question := range questions {
 		options, err := service.GetOptionsByQuestionID(question.ID)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
-		optionsResponse := make([]map[string]interface{}, 0)
+		optionsResponse := make([]map[string]any, 0)
 		for _, option := range options {
-			optionResponse := map[string]interface{}{
+			optionResponse := map[string]any{
 				"img":         option.Img,
 				"content":     option.Content,
 				"description": option.Description,
@@ -232,7 +227,7 @@ func GetSurvey(c *gin.Context) {
 			}
 			optionsResponse = append(optionsResponse, optionResponse)
 		}
-		questionMap := map[string]interface{}{
+		questionMap := map[string]any{
 			"id":             question.ID,
 			"serial_num":     question.SerialNum,
 			"subject":        question.Subject,
@@ -249,7 +244,7 @@ func GetSurvey(c *gin.Context) {
 		}
 		questionsResponse = append(questionsResponse, questionMap)
 	}
-	response := map[string]interface{}{
+	response := map[string]any{
 		"id":          survey.ID,
 		"title":       survey.Title,
 		"time":        survey.Deadline,
@@ -265,7 +260,7 @@ func GetSurvey(c *gin.Context) {
 	utils.JsonSuccessResponse(c, response)
 }
 
-// 上传图片
+// UploadImg 上传图片
 func UploadImg(c *gin.Context) {
 	url, err := service.HandleImgUpload(c)
 	if err != nil {
@@ -275,7 +270,7 @@ func UploadImg(c *gin.Context) {
 	utils.JsonSuccessResponse(c, url)
 }
 
-// 上传文件
+// UploadFile 上传文件
 func UploadFile(c *gin.Context) {
 	url, err := service.HandleFileUpload(c)
 	if err != nil {
@@ -285,13 +280,14 @@ func UploadFile(c *gin.Context) {
 	utils.JsonSuccessResponse(c, url)
 }
 
-type OauthData struct {
+type oauthData struct {
 	StudentID string `json:"stu_id" binding:"required"`
 	Password  string `json:"password" binding:"required"`
 }
 
+// Oauth 统一验证
 func Oauth(c *gin.Context) {
-	var data OauthData
+	var data oauthData
 	err := c.ShouldBindJSON(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
@@ -314,22 +310,23 @@ func Oauth(c *gin.Context) {
 	utils.JsonSuccessResponse(c, gin.H{"token": token})
 }
 
-type GetOptionCount struct {
-	SerialNum int    `json:"serial_num"` //选项序号
-	Content   string `json:"content"`    //选项内容
-	Count     int    `json:"count"`      //选项数量
-	Rank      int    `json:"rank"`       //选项排名
+type getOptionCount struct {
+	SerialNum int    `json:"serial_num"` // 选项序号
+	Content   string `json:"content"`    // 选项内容
+	Count     int    `json:"count"`      // 选项数量
+	Rank      int    `json:"rank"`       // 选项排名
 }
 
-type GetSurveyStatisticsResponse struct {
-	SerialNum    int              `json:"serial_num"`    //问题序号
-	Question     string           `json:"question"`      //问题内容
-	QuestionType int              `json:"question_type"` //问题类型  1:单选 2:多选
-	Options      []GetOptionCount `json:"options"`       //选项内容
+type getSurveyStatisticsResponse struct {
+	SerialNum    int              `json:"serial_num"`    // 问题序号
+	Question     string           `json:"question"`      // 问题内容
+	QuestionType int              `json:"question_type"` // 问题类型  1:单选 2:多选
+	Options      []getOptionCount `json:"options"`       // 选项内容
 }
 
+// GetSurveyStatistics 获取投票统计
 func GetSurveyStatistics(c *gin.Context) {
-	var data GetSurveyData
+	var data getSurveyData
 	err := c.ShouldBindQuery(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
@@ -358,7 +355,7 @@ func GetSurveyStatistics(c *gin.Context) {
 
 	// 如果 answersheets 为空，则返回所有问题和选项统计为 0
 	if len(answersheets) == 0 {
-		response := make([]GetSurveyStatisticsResponse, 0, len(questions))
+		response := make([]getSurveyStatisticsResponse, 0, len(questions))
 		for _, q := range questions {
 			options, err := service.GetOptionsByQuestionID(q.ID)
 			if err != nil {
@@ -366,9 +363,9 @@ func GetSurveyStatistics(c *gin.Context) {
 				return
 			}
 
-			qOptions := make([]GetOptionCount, 0, len(options)+1)
+			qOptions := make([]getOptionCount, 0, len(options)+1)
 			for _, option := range options {
-				qOptions = append(qOptions, GetOptionCount{
+				qOptions = append(qOptions, getOptionCount{
 					SerialNum: option.SerialNum,
 					Content:   option.Content,
 					Count:     0,
@@ -378,7 +375,7 @@ func GetSurveyStatistics(c *gin.Context) {
 
 			// 如果支持 "其他" 选项，添加一项
 			if q.OtherOption {
-				qOptions = append(qOptions, GetOptionCount{
+				qOptions = append(qOptions, getOptionCount{
 					SerialNum: 0,
 					Content:   "其他",
 					Count:     0,
@@ -386,7 +383,7 @@ func GetSurveyStatistics(c *gin.Context) {
 				})
 			}
 
-			response = append(response, GetSurveyStatisticsResponse{
+			response = append(response, getSurveyStatisticsResponse{
 				SerialNum:    q.SerialNum,
 				Question:     q.Subject,
 				QuestionType: q.QuestionType,
@@ -449,20 +446,20 @@ func GetSurveyStatistics(c *gin.Context) {
 		}
 	}
 
-	response := make([]GetSurveyStatisticsResponse, 0, len(optionCounts))
+	response := make([]getSurveyStatisticsResponse, 0, len(optionCounts))
 	for qid, options := range optionCounts {
 		q := questionMap[qid]
-		var qOptions []GetOptionCount
+		var qOptions []getOptionCount
 		if q.OtherOption {
-			qOptions = make([]GetOptionCount, 0, len(options)+1)
+			qOptions = make([]getOptionCount, 0, len(options)+1)
 			// 添加其他选项
-			qOptions = append(qOptions, GetOptionCount{
+			qOptions = append(qOptions, getOptionCount{
 				SerialNum: 0,
 				Content:   "其他",
 				Count:     options[0],
 			})
 		} else {
-			qOptions = make([]GetOptionCount, 0, len(options))
+			qOptions = make([]getOptionCount, 0, len(options))
 		}
 		// 按序号排序
 		sortedSerialNums := make([]int, 0, len(options))
@@ -473,7 +470,7 @@ func GetSurveyStatistics(c *gin.Context) {
 		for _, oSerialNum := range sortedSerialNums {
 			count := options[oSerialNum]
 			op := optionSerialNumMap[qid][oSerialNum]
-			qOptions = append(qOptions, GetOptionCount{
+			qOptions = append(qOptions, getOptionCount{
 				SerialNum: op.SerialNum,
 				Content:   op.Content,
 				Count:     count,
@@ -481,7 +478,7 @@ func GetSurveyStatistics(c *gin.Context) {
 		}
 
 		// 创建一个副本用于排序
-		sortedQOptions := make([]GetOptionCount, len(qOptions))
+		sortedQOptions := make([]getOptionCount, len(qOptions))
 		copy(sortedQOptions, qOptions)
 
 		// 按选项数量排序
@@ -509,13 +506,12 @@ func GetSurveyStatistics(c *gin.Context) {
 			qOptions[i].Rank = rankMap[qOptions[i].SerialNum]
 		}
 
-		response = append(response, GetSurveyStatisticsResponse{
+		response = append(response, getSurveyStatisticsResponse{
 			SerialNum:    q.SerialNum,
 			Question:     q.Subject,
 			QuestionType: q.QuestionType,
 			Options:      qOptions,
 		})
-
 	}
 	utils.JsonSuccessResponse(c, gin.H{"statistics": response})
 }

@@ -15,6 +15,7 @@ type Error struct {
 	Level log.Level
 }
 
+// Error 表示自定义的错误类型
 var (
 	ServerError           = NewError(200500, log.LevelError, "系统异常，请稍后重试!")
 	ParamError            = NewError(200501, log.LevelInfo, "参数错误")

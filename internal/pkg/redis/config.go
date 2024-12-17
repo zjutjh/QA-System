@@ -5,7 +5,10 @@ import (
 	WeJHSDK "github.com/zjutjh/WeJH-SDK"
 )
 
+// RedisClient Redis客户端
 var RedisClient *redis.Client
+
+// RedisInfo Redis配置信息
 var RedisInfo WeJHSDK.RedisInfoConfig
 
 func init() {
@@ -13,5 +16,4 @@ func init() {
 
 	RedisClient = WeJHSDK.GetRedisClient(info)
 	RedisInfo = info
-
 }

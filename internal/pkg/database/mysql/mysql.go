@@ -1,4 +1,4 @@
-package database
+package mysql
 
 import (
 	"fmt"
@@ -9,8 +9,8 @@ import (
 	"gorm.io/gorm"
 )
 
-func MysqlInit() *gorm.DB {
-
+// Init 初始化 MySQL 连接
+func Init() *gorm.DB {
 	user := global.Config.GetString("mysql.user")
 	pass := global.Config.GetString("mysql.pass")
 	port := global.Config.GetString("mysql.port")

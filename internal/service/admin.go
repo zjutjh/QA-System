@@ -15,6 +15,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
+// GetAdminByUsername 根据用户名获取管理员
 func GetAdminByUsername(username string) (*models.User, error) {
 	user, err := d.GetUserByUsername(ctx, username)
 	if err != nil {
@@ -26,6 +27,7 @@ func GetAdminByUsername(username string) (*models.User, error) {
 	return user, nil
 }
 
+// GetAdminByID 根据ID获取管理员
 func GetAdminByID(id int) (*models.User, error) {
 	user, err := d.GetUserByID(ctx, id)
 	if err != nil {
@@ -37,45 +39,53 @@ func GetAdminByID(id int) (*models.User, error) {
 	return user, nil
 }
 
+// IsAdminExist 判断管理员是否存在
 func IsAdminExist(username string) error {
 	_, err := d.GetUserByUsername(ctx, username)
 	return err
 }
 
+// CreateAdmin 创建管理员
 func CreateAdmin(user models.User) error {
 	aesEncryptPassword(&user)
 	err := d.CreateUser(ctx, &user)
 	return err
 }
 
+// GetUserByName 根据用户名获取用户
 func GetUserByName(username string) (*models.User, error) {
 	user, err := d.GetUserByUsername(ctx, username)
 	return user, err
 }
 
+// CreatePermission 创建权限
 func CreatePermission(id int, surveyID int) error {
 	err := d.CreateManage(ctx, id, surveyID)
 	return err
 }
 
+// DeletePermission 删除权限
 func DeletePermission(id int, surveyID int) error {
 	err := d.DeleteManage(ctx, id, surveyID)
 	return err
 }
 
+// CheckPermission 检查权限
 func CheckPermission(id int, surveyID int) error {
 	err := d.CheckManage(ctx, id, surveyID)
 	return err
 }
 
-func CreateSurvey(id int, title string, desc string, img string, questions []dao.Question, status int, surveyType, limit uint, verify bool, time, startTime time.Time) error {
+// CreateSurvey 创建问卷
+func CreateSurvey(id int, title string, desc string, img string, questions []dao.Question,
+	status int, surveyType, limit uint, verify bool, ddl, startTime time.Time) error {
 	var survey models.Survey
 	survey.UserID = id
 	survey.Title = title
 	survey.Desc = desc
 	survey.Img = img
 	survey.Status = status
-	survey.Deadline = time
+	survey.Deadline = ddl
 	survey.Type = surveyType
 	survey.DailyLimit = limit
 	survey.Verify = verify
@@ -88,17 +98,20 @@ func CreateSurvey(id int, title string, desc string, img string, questions []dao
 	return err
 }
 
+// UpdateSurveyStatus 更新问卷状态
 func UpdateSurveyStatus(id int, status int) error {
 	err := d.UpdateSurveyStatus(ctx, id, status)
 	return err
 }
 
-func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, desc string, img string, questions []dao.Question, time, startTime time.Time) error {
-	//遍历原有问题，删除对应选项
+// UpdateSurvey 更新问卷
+func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, desc string,
+	img string, questions []dao.Question, ddl, startTime time.Time) error {
+	// 遍历原有问题，删除对应选项
 	var oldQuestions []models.Question
 	var old_imgs []string
 	new_imgs := make([]string, 0)
-	//获取原有图片
+	// 获取原有图片
 	oldQuestions, err := d.GetQuestionsBySurveyID(ctx, id)
 	if err != nil {
 		return err
@@ -107,7 +120,7 @@ func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, des
 	if err != nil {
 		return err
 	}
-	//删除原有问题和选项
+	// 删除原有问题和选项
 	for _, oldQuestion := range oldQuestions {
 		oldOptions, err := d.GetOptionsByQuestionID(ctx, oldQuestion.ID)
 		if err != nil {
@@ -123,42 +136,47 @@ func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, des
 		if err != nil {
 			return err
 		}
-		err = d.DeleteAllQuestionCache(ctx)
+		err = dao.DeleteAllQuestionCache(ctx)
 		if err != nil {
 			return err
 		}
-		err = d.DeleteAllOptionCache(ctx)
+		err = dao.DeleteAllOptionCache(ctx)
 		if err != nil {
 			return err
 		}
 	}
-	//修改问卷信息
-	err = d.UpdateSurvey(ctx, id, surveyType, limit, verify, title, desc, img, time, startTime)
+	// 修改问卷信息
+	err = d.UpdateSurvey(ctx, id, surveyType, limit, verify, title, desc, img, ddl, startTime)
 	if err != nil {
 		return err
 	}
 	new_imgs = append(new_imgs, img)
-	//重新添加问题和选项
+	// 重新添加问题和选项
 	imgs, err := createQuestionsAndOptions(questions, id)
 	if err != nil {
 		return err
 	}
 	new_imgs = append(new_imgs, imgs...)
 	urlHost := GetConfigUrl()
-	//删除无用图片
-	for _, old_img := range old_imgs {
-		if !contains(new_imgs, old_img) {
-			_ = os.Remove("./public/static/" + strings.TrimPrefix(old_img, urlHost+"/public/static/"))
+	// 删除无用图片
+	for _, oldImg := range old_imgs {
+		if !contains(new_imgs, oldImg) {
+			err = os.Remove("./public/static/" + strings.TrimPrefix(oldImg, urlHost+"/public/static/"))
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
 }
 
+// UserInManage 用户是否在管理中
 func UserInManage(uid int, sid int) bool {
 	_, err := d.GetManageByUIDAndSID(ctx, uid, sid)
 	return err == nil
 }
 
+// DeleteSurvey 删除问卷
 func DeleteSurvey(id int) error {
 	var questions []models.Question
 	questions, err := d.GetQuestionsBySurveyID(ctx, id)
@@ -170,29 +188,35 @@ func DeleteSurvey(id int) error {
 	if err != nil {
 		return err
 	}
-	//删除图片
+	// 删除图片
 	imgs, err := getDelImgs(id, questions, answerSheets)
 	if err != nil {
 		return err
 	}
-	//删除文件
+	// 删除文件
 	files, err := getDelFiles(answerSheets)
 	if err != nil {
 		return err
 	}
 	urlHost := GetConfigUrl()
 	for _, img := range imgs {
-		_ = os.Remove("./public/static/" + strings.TrimPrefix(img, urlHost+"/public/static/"))
+		err = os.Remove("./public/static/" + strings.TrimPrefix(img, urlHost+"/public/static/"))
+		if err != nil {
+			return err
+		}
 	}
 	for _, file := range files {
-		_ = os.Remove("./public/file/" + strings.TrimPrefix(file, urlHost+"/public/file/"))
+		err = os.Remove("./public/file/" + strings.TrimPrefix(file, urlHost+"/public/file/"))
+		if err != nil {
+			return err
+		}
 	}
-	//删除答卷
+	// 删除答卷
 	err = DeleteAnswerSheetBySurveyID(id)
 	if err != nil {
 		return err
 	}
-	//删除问题、选项、问卷、管理
+	// 删除问题、选项、问卷、管理
 	for _, question := range questions {
 		err = d.DeleteOption(ctx, question.ID)
 		if err != nil {
@@ -203,11 +227,11 @@ func DeleteSurvey(id int) error {
 	if err != nil {
 		return err
 	}
-	err = d.DeleteAllQuestionCache(ctx)
+	err = dao.DeleteAllQuestionCache(ctx)
 	if err != nil {
 		return err
 	}
-	err = d.DeleteAllOptionCache(ctx)
+	err = dao.DeleteAllOptionCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -219,17 +243,18 @@ func DeleteSurvey(id int) error {
 	return err
 }
 
+// GetSurveyAnswers 获取问卷答案
 func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.AnswersResonse, *int64, error) {
 	var answerSheets []dao.AnswerSheet
 	data := make([]dao.QuestionAnswers, 0)
-	time := make([]string, 0)
+	times := make([]string, 0)
 	var total *int64
-	//获取问题
+	// 获取问题
 	questions, err := d.GetQuestionsBySurveyID(ctx, id)
 	if err != nil {
 		return dao.AnswersResonse{}, nil, err
 	}
-	//初始化data
+	// 初始化data
 	for _, question := range questions {
 		var q dao.QuestionAnswers
 		q.Title = question.Subject
@@ -237,14 +262,14 @@ func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.
 		q.Answers = make([]string, 0)
 		data = append(data, q)
 	}
-	//获取答卷
+	// 获取答卷
 	answerSheets, total, err = d.GetAnswerSheetBySurveyID(ctx, id, num, size, text, unique)
 	if err != nil {
 		return dao.AnswersResonse{}, nil, err
 	}
-	//填充data
+	// 填充data
 	for _, answerSheet := range answerSheets {
-		time = append(time, answerSheet.Time)
+		times = append(times, answerSheet.Time)
 		for _, answer := range answerSheet.Answers {
 			question, err := d.GetQuestionByID(ctx, answer.QuestionID)
 			if err != nil {
@@ -257,26 +282,30 @@ func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.
 			}
 		}
 	}
-	return dao.AnswersResonse{QuestionAnswers: data, Time: time}, total, nil
+	return dao.AnswersResonse{QuestionAnswers: data, Time: times}, total, nil
 }
 
+// GetAllSurveyByUserID 获取用户的所有问卷
 func GetAllSurveyByUserID(userId int) ([]models.Survey, error) {
 	return d.GetAllSurveyByUserID(ctx, userId)
 }
 
-func ProcessResponse(response []interface{}, pageNum, pageSize int, title string) ([]interface{}, *int64) {
+// ProcessResponse 处理响应
+func ProcessResponse(response []any, pageNum, pageSize int, title string) ([]any, *int64) {
+	filteredResponse := make([]any, 0)
 	if title != "" {
-		filteredResponse := make([]interface{}, 0)
 		for _, item := range response {
-			itemMap := item.(map[string]interface{})
-			if strings.Contains(strings.ToLower(itemMap["title"].(string)), strings.ToLower(title)) {
+			itemMap, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			if strings.Contains(strings.ToLower(itemMap["title"].(string)), strings.ToLower(title)) { //nolint
 				filteredResponse = append(filteredResponse, item)
 			}
 		}
-		response = filteredResponse
 	}
 
-	num := int64(len(response))
+	num := int64(len(filteredResponse))
 	if pageNum < 1 {
 		pageNum = 1
 	}
@@ -285,21 +314,23 @@ func ProcessResponse(response []interface{}, pageNum, pageSize int, title string
 	}
 	startIdx := (pageNum - 1) * pageSize
 	endIdx := startIdx + pageSize
-	if startIdx > len(response) {
-		return []interface{}{}, &num // 如果起始索引超出范围，返回空数据
+	if startIdx > len(filteredResponse) {
+		return []any{}, &num // 如果起始索引超出范围，返回空数据
 	}
-	if endIdx > len(response) {
-		endIdx = len(response)
+	if endIdx > len(filteredResponse) {
+		endIdx = len(filteredResponse)
 	}
-	pagedResponse := response[startIdx:endIdx]
+	pagedResponse := filteredResponse[startIdx:endIdx]
 
 	return pagedResponse, &num
 }
 
+// GetAllSurvey 获取所有问卷
 func GetAllSurvey(pageNum, pageSize int, title string) ([]models.Survey, *int64, error) {
 	return d.GetSurveyByTitle(ctx, title, pageNum, pageSize)
 }
 
+// SortSurvey 排序问卷
 func SortSurvey(originalSurveys []models.Survey) []models.Survey {
 	sort.Slice(originalSurveys, func(i, j int) bool {
 		return originalSurveys[i].ID > originalSurveys[j].ID
@@ -326,10 +357,11 @@ func SortSurvey(originalSurveys []models.Survey) []models.Survey {
 	return sortedSurveys
 }
 
-func GetSurveyResponse(surveys []models.Survey) []interface{} {
-	response := make([]interface{}, 0)
+// GetSurveyResponse 获取问卷响应
+func GetSurveyResponse(surveys []models.Survey) []any {
+	response := make([]any, 0)
 	for _, survey := range surveys {
-		surveyResponse := map[string]interface{}{
+		surveyResponse := map[string]any{
 			"id":          survey.ID,
 			"title":       survey.Title,
 			"status":      survey.Status,
@@ -341,17 +373,19 @@ func GetSurveyResponse(surveys []models.Survey) []interface{} {
 	return response
 }
 
-func GetManageredSurveyByUserID(userId int) ([]models.Manage, error) {
+// GetManagedSurveyByUserID 获取用户管理的问卷
+func GetManagedSurveyByUserID(userId int) ([]models.Manage, error) {
 	var manages []models.Manage
 	manages, err := d.GetManageByUserID(ctx, userId)
 	return manages, err
 }
 
+// GetAllSurveyAnswers 获取所有问卷答案
 func GetAllSurveyAnswers(id int) (dao.AnswersResonse, error) {
-	var data []dao.QuestionAnswers
-	var answerSheets []dao.AnswerSheet
-	var questions []models.Question
-	var time []string
+	data := make([]dao.QuestionAnswers, 0)
+	answerSheets := make([]dao.AnswerSheet, 0)
+	questions := make([]models.Question, 0)
+	times := make([]string, 0)
 	questions, err := d.GetQuestionsBySurveyID(ctx, id)
 	if err != nil {
 		return dao.AnswersResonse{}, err
@@ -367,7 +401,7 @@ func GetAllSurveyAnswers(id int) (dao.AnswersResonse, error) {
 		return dao.AnswersResonse{}, err
 	}
 	for _, answerSheet := range answerSheets {
-		time = append(time, answerSheet.Time)
+		times = append(times, answerSheet.Time)
 		for _, answer := range answerSheet.Answers {
 			question, err := d.GetQuestionByID(ctx, answer.QuestionID)
 			if err != nil {
@@ -380,23 +414,13 @@ func GetAllSurveyAnswers(id int) (dao.AnswersResonse, error) {
 			}
 		}
 	}
-	return dao.AnswersResonse{QuestionAnswers: data, Time: time}, nil
+	return dao.AnswersResonse{QuestionAnswers: data, Time: times}, nil
 }
 
+// GetSurveyAnswersBySurveyID 根据问卷编号获取问卷答案
 func GetSurveyAnswersBySurveyID(sid int) ([]dao.AnswerSheet, error) {
 	answerSheets, _, err := d.GetAnswerSheetBySurveyID(ctx, sid, 0, 0, "", true)
 	return answerSheets, err
-}
-
-func GetOptionByQIDAndAnswer(qid int, answer string) (*models.Option, error) {
-	var option *models.Option
-	option, err := d.GetOptionByQIDAndAnswer(ctx, qid, answer)
-	return option, err
-}
-
-func GetOptionByQIDAndSerialNum(qid int, serialNum int) (*models.Option, error) {
-	option, err := d.GetOptionByQIDAndSerialNum(ctx, qid, serialNum)
-	return option, err
 }
 
 func contains(arr []string, str string) bool {
@@ -409,7 +433,7 @@ func contains(arr []string, str string) bool {
 }
 
 func getOldImgs(id int, questions []models.Question) ([]string, error) {
-	var imgs []string
+	imgs := make([]string, 0)
 	survey, err := d.GetSurveyByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -430,7 +454,7 @@ func getOldImgs(id int, questions []models.Question) ([]string, error) {
 }
 
 func getDelImgs(id int, questions []models.Question, answerSheets []dao.AnswerSheet) ([]string, error) {
-	var imgs []string
+	imgs := make([]string, 0)
 	survey, err := d.GetSurveyByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -478,7 +502,7 @@ func getDelFiles(answerSheets []dao.AnswerSheet) ([]string, error) {
 }
 
 func createQuestionsAndOptions(questions []dao.Question, sid int) ([]string, error) {
-	var imgs []string
+	imgs := make([]string, 0)
 	for _, question := range questions {
 		var q models.Question
 		q.SerialNum = question.SerialNum
@@ -515,6 +539,7 @@ func createQuestionsAndOptions(questions []dao.Question, sid int) ([]string, err
 	return imgs, nil
 }
 
+// DeleteAnswerSheetBySurveyID 根据问卷编号删除问卷答案
 func DeleteAnswerSheetBySurveyID(surveyID int) error {
 	err := d.DeleteAnswerSheetBySurveyID(ctx, surveyID)
 	return err
@@ -528,6 +553,7 @@ func aesEncryptPassword(user *models.User) {
 	user.Password = utils.AesEncrypt(user.Password)
 }
 
+// HandleDownloadFile 处理下载文件
 func HandleDownloadFile(answers dao.AnswersResonse, survey *models.Survey) (string, error) {
 	questionAnswers := answers.QuestionAnswers
 	times := answers.Time
@@ -566,8 +592,9 @@ func HandleDownloadFile(answers dao.AnswersResonse, survey *models.Survey) (stri
 		}
 	}
 	// 写入标题行
-	rowData := make([]interface{}, 0)
-	rowData = append(rowData, excelize.Cell{Value: "序号", StyleID: styleID}, excelize.Cell{Value: "提交时间", StyleID: styleID})
+	rowData := make([]any, 0)
+	rowData = append(rowData, excelize.Cell{Value: "序号", StyleID: styleID},
+		excelize.Cell{Value: "提交时间", StyleID: styleID})
 	for _, qa := range questionAnswers {
 		rowData = append(rowData, excelize.Cell{Value: qa.Title, StyleID: styleID})
 	}
@@ -575,15 +602,18 @@ func HandleDownloadFile(answers dao.AnswersResonse, survey *models.Survey) (stri
 		return "", errors.New("写入标题行失败原因: " + err.Error())
 	}
 	// 写入数据
-	for i, time := range times {
-		row := []interface{}{i + 1, time}
+	for i, t := range times {
+		row := []any{i + 1, t}
 		for j, qa := range questionAnswers {
 			if len(qa.Answers) <= i {
 				continue
 			}
 			answer := qa.Answers[i]
 			row = append(row, answer)
-			colName, _ := excelize.ColumnNumberToName(j + 3)
+			colName, err := excelize.ColumnNumberToName(j + 3)
+			if err != nil {
+				return "", errors.New("转换列名失败原因: " + err.Error())
+			}
 			if err := f.SetCellValue("Sheet1", colName+strconv.Itoa(i+2), answer); err != nil {
 				return "", errors.New("写入数据失败原因: " + err.Error())
 			}
@@ -600,7 +630,7 @@ func HandleDownloadFile(answers dao.AnswersResonse, survey *models.Survey) (stri
 	fileName := survey.Title + ".xlsx"
 	filePath := "./public/xlsx/" + fileName
 	if _, err := os.Stat("./public/xlsx/"); os.IsNotExist(err) {
-		err := os.Mkdir("./public/xlsx/", 0755)
+		err := os.Mkdir("./public/xlsx/", 0750)
 		if err != nil {
 			return "", errors.New("创建文件夹失败原因: " + err.Error())
 		}
@@ -622,12 +652,14 @@ func HandleDownloadFile(answers dao.AnswersResonse, survey *models.Survey) (stri
 	return url, nil
 }
 
+// UpdateAdminPassword 更新管理员密码
 func UpdateAdminPassword(id int, password string) error {
-	password = utils.AesEncrypt(password)
-	err := d.UpdateUserPassword(ctx, id, password)
+	encryptedPassword := utils.AesEncrypt(password)
+	err := d.UpdateUserPassword(ctx, id, encryptedPassword)
 	return err
 }
 
+// CreateQuestionPre 创建问题预先信息
 func CreateQuestionPre(name string, value []string) error {
 	// 将String[]类型转化为String,以逗号分隔
 	pre := strings.Join(value, ",")
@@ -635,6 +667,7 @@ func CreateQuestionPre(name string, value []string) error {
 	return err
 }
 
+// GetQuestionPre 获取问题预先信息
 func GetQuestionPre(name string) ([]string, error) {
 	value, err := d.GetType(ctx, name)
 	if err != nil {
@@ -645,7 +678,7 @@ func GetQuestionPre(name string) ([]string, error) {
 	return pre, nil
 }
 
+// DeleteOauthRecord 删除统一记录
 func DeleteOauthRecord(sid int) error {
 	return d.DeleteRecordSheets(ctx, sid)
-
 }

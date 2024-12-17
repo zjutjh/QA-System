@@ -8,6 +8,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// SetUserSession 设置用户会话
 func SetUserSession(c *gin.Context, user *models.User) error {
 	webSession := sessions.Default(c)
 	webSession.Options(sessions.Options{
@@ -19,20 +20,29 @@ func SetUserSession(c *gin.Context, user *models.User) error {
 	return webSession.Save()
 }
 
+// GetUserSession 获取用户会话
 func GetUserSession(c *gin.Context) (*models.User, error) {
 	webSession := sessions.Default(c)
 	id := webSession.Get("id")
 	if id == nil {
 		return nil, errors.New("")
 	}
-	user, _ := GetAdminByID(id.(int))
-	if user == nil {
-		ClearUserSession(c)
+	uid, ok := id.(int)
+	if !ok {
+		return nil, errors.New("")
+	}
+	user, err := GetAdminByID(uid)
+	if user == nil || err != nil {
+		err = ClearUserSession(c)
+		if err != nil {
+			return nil, err
+		}
 		return nil, errors.New("")
 	}
 	return user, nil
 }
 
+// UpdateUserSession 更新用户会话
 func UpdateUserSession(c *gin.Context) (*models.User, error) {
 	user, err := GetUserSession(c)
 	if err != nil {
@@ -45,14 +55,20 @@ func UpdateUserSession(c *gin.Context) (*models.User, error) {
 	return user, nil
 }
 
+// CheckUserSession 检查用户会话
 func CheckUserSession(c *gin.Context) bool {
 	webSession := sessions.Default(c)
 	id := webSession.Get("id")
 	return id != nil
 }
 
-func ClearUserSession(c *gin.Context) {
+// ClearUserSession 清除用户会话
+func ClearUserSession(c *gin.Context) error {
 	webSession := sessions.Default(c)
 	webSession.Delete("id")
-	webSession.Save()
+	err := webSession.Save()
+	if err != nil {
+		return err
+	}
+	return nil
 }

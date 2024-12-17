@@ -11,9 +11,9 @@ import (
 var (
 	key string
 	t   *jwt.Token
-	s   string
 )
 
+// NewJWT 生成 JWT
 func NewJWT(stuId string) string {
 	key = global.Config.GetString("jwt.secret")
 	duration := time.Hour * 24 * 7
@@ -29,9 +29,10 @@ func NewJWT(stuId string) string {
 	return s
 }
 
+// ParseJWT 解析 JWT
 func ParseJWT(token string) (string, error) {
 	key = global.Config.GetString("jwt.secret")
-	t, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+	t, err := jwt.Parse(token, func(_ *jwt.Token) (any, error) {
 		return []byte(key), nil
 	})
 	if err != nil {
@@ -49,6 +50,9 @@ func ParseJWT(token string) (string, error) {
 		}
 	}
 
-	stuId := claims["stuId"].(string)
+	stuId, ok := claims["stuId"].(string)
+	if !ok {
+		return "", errors.New("invalid token")
+	}
 	return stuId, nil
 }

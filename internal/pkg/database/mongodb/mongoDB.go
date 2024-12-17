@@ -1,4 +1,4 @@
-package database
+package mongodb
 
 import (
 	"context"
@@ -11,10 +11,14 @@ import (
 	"go.uber.org/zap"
 )
 
+// QA mongodb存储答卷的集合名
 var QA string
+
+// Record mongodb存储记录的集合名
 var Record string
 
-func MongodbInit() *mongo.Database {
+// Init 初始化 MongoDB 连接
+func Init() *mongo.Database {
 	// Get MongoDB connection information from the configuration file
 	user := global.Config.GetString("mongodb.user")
 	pass := global.Config.GetString("mongodb.pass")
@@ -38,10 +42,9 @@ func MongodbInit() *mongo.Database {
 		zap.L().Fatal("Failed to ping MongoDB:" + err.Error())
 	}
 
-	// Set the MongoDB database
 	mdb := client.Database(db)
 
-	// Print a log message to indicate successful connection to MongoDB
+	// 日志记录
 	zap.L().Info("Connected to MongoDB")
 	return mdb
 }
