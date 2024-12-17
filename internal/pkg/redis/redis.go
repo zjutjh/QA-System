@@ -2,8 +2,9 @@ package redis
 
 import (
 	"QA-System/internal/global/config"
-	WeJHSDK  "github.com/zjutjh/WeJH-SDK"
+	WeJHSDK "github.com/zjutjh/WeJH-SDK"
 )
+
 func getConfig() WeJHSDK.RedisInfoConfig {
 	Info := WeJHSDK.RedisInfoConfig{
 		Host:     "localhost",

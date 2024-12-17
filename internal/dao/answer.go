@@ -1,9 +1,9 @@
 package dao
 
 import (
-	database "QA-System/internal/pkg/database/mongodb"
-	"QA-System/internal/pkg/log"
 	"context"
+
+	database "QA-System/internal/pkg/database/mongodb"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -57,7 +57,6 @@ func (d *Dao) SaveAnswerSheet(ctx context.Context, answerSheet AnswerSheet, qids
 		if err != nil {
 			return err
 		}
-		log.Logger.Info("没有找到符合条件的记录，已新增一条记录")
 		return nil
 	}
 
@@ -75,7 +74,6 @@ func (d *Dao) SaveAnswerSheet(ctx context.Context, answerSheet AnswerSheet, qids
 			if err != nil {
 				return err
 			}
-			log.Logger.Info("没有找到符合条件的记录，已新增一条记录")
 			return nil
 		}
 		return err
@@ -103,7 +101,6 @@ func (d *Dao) SaveAnswerSheet(ctx context.Context, answerSheet AnswerSheet, qids
 		return err
 	}
 
-	log.Logger.Info("更新并新增记录成功")
 	return nil
 }
 

@@ -1,12 +1,6 @@
 package service
 
 import (
-	"QA-System/internal/dao"
-	"QA-System/internal/models"
-	"QA-System/internal/pkg/log"
-	"QA-System/internal/pkg/utils"
-	"bufio"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -15,6 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"QA-System/internal/dao"
+	"QA-System/internal/models"
+	"QA-System/internal/pkg/utils"
 	"github.com/xuri/excelize/v2"
 )
 
@@ -516,133 +513,6 @@ func createQuestionsAndOptions(questions []dao.Question, sid int) ([]string, err
 		}
 	}
 	return imgs, nil
-}
-
-func GetLastLinesFromLogFile(numLines int, logType int) ([]map[string]interface{}, error) {
-	levelMap := map[int]string{
-		0: "",
-		1: "ERROR",
-		2: "WARN",
-		3: "INFO",
-		4: "DEBUG",
-	}
-	level := levelMap[logType]
-
-	var files []*os.File
-	var file *os.File
-	var err error
-
-	if logType == 0 {
-		// 打开所有相关的日志文件
-		files, err = openAllLogFiles()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		// 根据 logType 打开特定的日志文件
-		file, err = openLogFile(logType)
-		if err != nil {
-			return nil, err
-		}
-		if file != nil {
-			files = append(files, file)
-		}
-	}
-	defer closeFiles(files)
-
-	if len(files) == 0 {
-		return nil, nil
-	}
-
-	// 用于存储解析后的日志内容
-	var logs []map[string]interface{}
-
-	// 从每个文件中读取内容
-	for _, file := range files {
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			// 解析 JSON 字符串为 map 类型
-			var logData map[string]interface{}
-			if err := json.Unmarshal(scanner.Bytes(), &logData); err != nil {
-				// 如果解析失败，跳过这行日志继续处理下一行
-				continue
-			}
-
-			// 根据 logType 筛选日志
-			if level != "" {
-				if logData["L"] == level {
-					logs = append(logs, logData)
-				}
-			} else {
-				logs = append(logs, logData)
-			}
-		}
-
-		// 检查是否发生了读取错误
-		if err := scanner.Err(); err != nil {
-			return nil, err
-		}
-	}
-
-	// 如果文件中的行数不足以满足需求，直接返回所有行
-	if len(logs) <= numLines {
-		return logs, nil
-	}
-
-	// 如果文件中的行数超过需求，提取最后几行并返回
-	startIndex := len(logs) - numLines
-	return logs[startIndex:], nil
-}
-
-// 根据 logType 打开单个日志文件
-func openLogFile(logType int) (*os.File, error) {
-	var filePath string
-	switch logType {
-	case 1:
-		filePath = log.LogDir + "/" + log.LogName + log.ErrorLogSuffix
-	case 2:
-		filePath = log.LogDir + "/" + log.LogName + log.WarnLogSuffix
-	case 3, 4:
-		filePath = log.LogDir + "/" + log.LogName + log.LogSuffix
-	}
-	file, err := os.Open(filePath)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil // 文件不存在，返回 nil
-		}
-		return nil, err
-	}
-	return file, nil
-}
-
-// 打开所有相关的日志文件
-func openAllLogFiles() ([]*os.File, error) {
-	filePaths := []string{
-		log.LogDir + "/" + log.LogName + log.LogSuffix,
-		log.LogDir + "/" + log.LogName + log.ErrorLogSuffix,
-		log.LogDir + "/" + log.LogName + log.WarnLogSuffix,
-	}
-
-	var openFiles []*os.File
-	for _, filePath := range filePaths {
-		f, err := os.Open(filePath)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			closeFiles(openFiles)
-			return nil, err
-		}
-		openFiles = append(openFiles, f)
-	}
-	return openFiles, nil
-}
-
-// 关闭所有文件
-func closeFiles(files []*os.File) {
-	for _, file := range files {
-		file.Close()
-	}
 }
 
 func DeleteAnswerSheetBySurveyID(surveyID int) error {

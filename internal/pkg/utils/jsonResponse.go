@@ -1,12 +1,13 @@
 package utils
 
 import (
-	"QA-System/internal/pkg/code"
-	"github.com/gin-gonic/gin"
 	"net/http"
+
+	"github.com/gin-gonic/gin"
 )
 
-func JsonResponse(c *gin.Context, httpStatusCode int, code int, msg string, data interface{}) {
+// JsonResponse 返回json格式数据
+func JsonResponse(c *gin.Context, httpStatusCode int, code int, msg string, data any) {
 	c.JSON(httpStatusCode, gin.H{
 		"code": code,
 		"msg":  msg,
@@ -14,10 +15,12 @@ func JsonResponse(c *gin.Context, httpStatusCode int, code int, msg string, data
 	})
 }
 
-func JsonSuccessResponse(c *gin.Context, data interface{}) {
+// JsonSuccessResponse 返回成功json格式数据
+func JsonSuccessResponse(c *gin.Context, data any) {
 	JsonResponse(c, http.StatusOK, 200, "OK", data)
 }
 
-func JsonErrorResponse(c *gin.Context, err *code.Error) {
-	JsonResponse(c, http.StatusOK, err.Code, err.Msg, nil)
+// JsonErrorResponse 返回错误json格式数据
+func JsonErrorResponse(c *gin.Context, code int, msg string) {
+	JsonResponse(c, http.StatusOK, code, msg, nil)
 }

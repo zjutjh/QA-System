@@ -1,70 +1,51 @@
 package middlewares
 
 import (
-	"QA-System/internal/pkg/code"
-	"QA-System/internal/pkg/log"
-
+	"errors"
 	"net/http"
-	"runtime/debug"
 
+	"QA-System/internal/pkg/code"
+	"QA-System/internal/pkg/utils"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
+// ErrHandler 中间件用于处理请求错误。
+// 如果存在错误，将返回相应的 JSON 响应。
 func ErrHandler() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		defer func() {
-			if r := recover(); r != nil {
-				stack := debug.Stack()
-				log.Logger.Error("Panic recovered",
-					zap.String("path", c.Request.URL.Path),
-					zap.String("method", c.Request.Method),
-					zap.Any("panic", r),
-					zap.ByteString("stacktrace", stack),
-				)
-
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"code":  http.StatusInternalServerError,
-					"msg": code.ServerError.Msg,
-				})
-				c.Abort()
-			}
-		}()
-
+		// 向下执行请求
 		c.Next()
-		if length := len(c.Errors); length > 0 {
-			e := c.Errors[length-1]
-			err := e.Err
+
+		// 如果存在错误，则处理错误
+		if len(c.Errors) > 0 {
+			err := c.Errors.Last().Err
 			if err != nil {
-				// TODO 建立日志系统
-				var logLevel zapcore.Level
-				switch e.Type {
-				case gin.ErrorTypePublic:
-					logLevel = zapcore.ErrorLevel
-				case gin.ErrorTypeBind:
-					logLevel = zapcore.WarnLevel
-				case gin.ErrorTypePrivate:
-					logLevel = zapcore.DebugLevel
-				default:
-					logLevel = zapcore.InfoLevel
+				var apiErr *code.Error
+
+				// 尝试将错误转换为 apiException
+				ok := errors.As(err, &apiErr)
+
+				// 如果转换失败，则使用 ServerError
+				if !ok {
+					apiErr = code.ServerError
+					zap.L().Error("Unknown Error Occurred", zap.Error(err))
 				}
-				log.Logger.Check(logLevel, "Error reported").Write(
-					zap.String("path", c.Request.URL.Path),
-					zap.String("method", c.Request.Method),
-					zap.Error(err),
-				)
+
+				utils.JsonErrorResponse(c, apiErr.Code, apiErr.Msg)
 				return
 			}
 		}
 	}
 }
 
-
-// HandleNotFound
-//
-//	404处理
+// HandleNotFound 处理 404 错误。
 func HandleNotFound(c *gin.Context) {
 	err := code.NotFound
-	c.JSON(err.StatusCode, err)
+	// 记录 404 错误日志
+	zap.L().Warn("404 Not Found",
+		zap.String("path", c.Request.URL.Path),
+		zap.String("method", c.Request.Method),
+	)
+	utils.JsonResponse(c, http.StatusNotFound, err.Code, err.Msg, nil)
 }

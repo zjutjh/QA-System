@@ -2,7 +2,6 @@ package database
 
 import (
 	"QA-System/internal/models"
-
 	"gorm.io/gorm"
 )
 

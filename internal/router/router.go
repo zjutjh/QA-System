@@ -4,7 +4,6 @@ import (
 	a "QA-System/internal/handler/admin"
 	u "QA-System/internal/handler/user"
 	"QA-System/internal/middleware"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -38,14 +37,12 @@ func Init(r *gin.Engine) {
 			admin.GET("/statics/answers", a.GetSurveyStatistics)
 			admin.DELETE("/delete", a.DeleteSurvey)
 
-			admin.POST("/permission/create", a.CreatrPermission)
+			admin.POST("/permission/create", a.CreatePermission)
 			admin.DELETE("/permission/delete", a.DeletePermission)
 
 			admin.GET("/list/questions", a.GetAllSurvey)
 			admin.GET("/single/question", a.GetSurvey)
 			admin.GET("/download", a.DownloadFile)
-
-			admin.GET("/log", a.GetLogMsg)
 
 		}
 	}

@@ -12,10 +12,10 @@ type Config struct {
 
 func NewConfig() *Config {
 	return &Config{
-		host: global.Config.GetString("redis.host"),
-		port: global.Config.GetInt("redis.port"),
-		db: global.Config.GetInt("redis.db"),
-		user: global.Config.GetString("redis.user"),
+		host:     global.Config.GetString("redis.host"),
+		port:     global.Config.GetInt("redis.port"),
+		db:       global.Config.GetInt("redis.db"),
+		user:     global.Config.GetString("redis.user"),
 		password: global.Config.GetString("redis.pass"),
 	}
 }

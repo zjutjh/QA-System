@@ -1,13 +1,12 @@
 package service
 
 import (
-	"QA-System/internal/dao"
-	global "QA-System/internal/global/config"
 	"context"
 	"time"
 
+	"QA-System/internal/dao"
+	global "QA-System/internal/global/config"
 	r "QA-System/internal/pkg/redis"
-
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )

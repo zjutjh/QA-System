@@ -1,14 +1,13 @@
 package request
 
 import (
-	"QA-System/internal/pkg/log"
 	"crypto/tls"
 	"encoding/json"
+	"time"
+
 	"github.com/go-resty/resty/v2"
 	jsoniter "github.com/json-iterator/go"
 	"go.uber.org/zap"
-
-	"time"
 )
 
 // Client 包装 Resty 客户端
@@ -39,13 +38,13 @@ func New() Client {
 	s.Client.AddRetryCondition(func(r *resty.Response, err error) bool {
 		if err != nil {
 			// 网络错误时重试
-			log.Logger.Error("Network error: %v. Retrying..." + err.Error())
+			zap.L().Error("Network error: %v. Retrying..." + err.Error())
 			return true
 		}
 
 		// 如果 HTTP 状态码不是 200，通常不需要解析 JSON，直接返回
 		if r.StatusCode() != 200 {
-			log.Logger.Error("Non-200 status code: %d. Retrying...", zap.Int("status_code", r.StatusCode()))
+			zap.L().Error("Non-200 status code: %d. Retrying...", zap.Int("status_code", r.StatusCode()))
 			return true
 		}
 
@@ -58,7 +57,7 @@ func New() Client {
 
 		if unmarshalErr := json.Unmarshal(r.Body(), &resp); unmarshalErr != nil {
 			// JSON 解析失败，可能是服务器返回非预期数据
-			log.Logger.Error("Failed to parse response JSON: %v. Retrying...", zap.Error(unmarshalErr))
+			zap.L().Error("Failed to parse response JSON: %v. Retrying...", zap.Error(unmarshalErr))
 			return true
 		}
 
@@ -97,7 +96,7 @@ func RestyLogMiddleware(_ *resty.Client, resp *resty.Response) error {
 	if resp.IsError() {
 		method := resp.Request.Method
 		url := resp.Request.URL
-		log.Logger.Error("请求出现错误", zap.String("method", method), zap.String("url", url), zap.Int64("time_spent(ms)", resp.Time().Milliseconds()))
+		zap.L().Error("请求出现错误", zap.String("method", method), zap.String("url", url), zap.Int64("time_spent(ms)", resp.Time().Milliseconds()))
 	}
 	return nil
 }

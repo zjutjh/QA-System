@@ -10,8 +10,8 @@ import (
 	"QA-System/internal/pkg/session"
 	"QA-System/internal/router"
 	"QA-System/internal/service"
-
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -36,9 +36,9 @@ func main() {
 	r.Static("public/xlsx", "./public/xlsx")
 	session.Init(r)
 	router.Init(r)
-	go asynq.AsynqInit()
+	go asynq.Init()
 	err := r.Run(":" + global.Config.GetString("server.port"))
 	if err != nil {
-		log.Logger.Fatal("Failed to start the server:" + err.Error())
+		zap.L().Fatal("Failed to start the server:" + err.Error())
 	}
 }

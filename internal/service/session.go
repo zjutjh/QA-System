@@ -1,16 +1,12 @@
 package service
 
 import (
-	"QA-System/internal/models"
 	"errors"
 
-
+	"QA-System/internal/models"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
-
 )
-
-
 
 func SetUserSession(c *gin.Context, user *models.User) error {
 	webSession := sessions.Default(c)

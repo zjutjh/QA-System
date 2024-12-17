@@ -4,12 +4,11 @@ import (
 	"context"
 	"fmt"
 
+	"QA-System/internal/global/config"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
-
-	"QA-System/internal/global/config"
-	"QA-System/internal/pkg/log"
+	"go.uber.org/zap"
 )
 
 var QA string
@@ -32,17 +31,17 @@ func MongodbInit() *mongo.Database {
 	clientOptions := options.Client().ApplyURI(dsn)
 	client, err := mongo.Connect(context.TODO(), clientOptions)
 	if err != nil {
-		log.Logger.Fatal("Failed to connect to MongoDB:" + err.Error())
+		zap.L().Fatal("Failed to connect to MongoDB:" + err.Error())
 	}
 
 	if err := client.Ping(context.TODO(), readpref.Primary()); err != nil {
-		log.Logger.Fatal("Failed to ping MongoDB:" + err.Error())
+		zap.L().Fatal("Failed to ping MongoDB:" + err.Error())
 	}
 
 	// Set the MongoDB database
 	mdb := client.Database(db)
 
 	// Print a log message to indicate successful connection to MongoDB
-	log.Logger.Info("Connected to MongoDB")
+	zap.L().Info("Connected to MongoDB")
 	return mdb
 }

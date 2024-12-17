@@ -1,10 +1,11 @@
 package service
 
 import (
+	"net/url"
+
 	"QA-System/internal/pkg/api/userCenterApi"
 	"QA-System/internal/pkg/code"
 	"QA-System/internal/pkg/request"
-	"net/url"
 )
 
 // UserCenterResponse 用户中心响应结构体

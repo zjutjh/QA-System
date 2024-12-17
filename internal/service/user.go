@@ -1,15 +1,8 @@
 package service
 
 import (
-	"QA-System/internal/dao"
-	"QA-System/internal/models"
 	"errors"
 	"fmt"
-	"github.com/disintegration/imaging"
-	"github.com/gabriel-vasile/mimetype"
-	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
-	"github.com/nfnt/resize"
 	"image/jpeg"
 	"io"
 	"mime/multipart"
@@ -17,6 +10,14 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"QA-System/internal/dao"
+	"QA-System/internal/models"
+	"github.com/disintegration/imaging"
+	"github.com/gabriel-vasile/mimetype"
+	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/nfnt/resize"
 )
 
 func GetSurveyByID(id int) (*models.Survey, error) {

@@ -2,7 +2,7 @@ package redis
 
 import (
 	"github.com/go-redis/redis/v8"
-	WeJHSDK  "github.com/zjutjh/WeJH-SDK"
+	WeJHSDK "github.com/zjutjh/WeJH-SDK"
 )
 
 var RedisClient *redis.Client

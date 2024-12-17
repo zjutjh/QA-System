@@ -1,10 +1,11 @@
 package utils
 
 import (
-	global "QA-System/internal/global/config"
 	"errors"
-	"github.com/golang-jwt/jwt/v5"
 	"time"
+
+	global "QA-System/internal/global/config"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 var (
