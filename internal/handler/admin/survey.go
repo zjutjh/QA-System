@@ -188,7 +188,7 @@ func UpdateSurveyStatus(c *gin.Context) {
 			return
 		}
 		questions, err := service.GetQuestionsBySurveyID(survey.ID)
-		if err == gorm.ErrRecordNotFound {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			code.AbortWithException(c, code.SurveyIncomplete, errors.New("问卷问题不存在"))
 			return
 		} else if err != nil {
@@ -369,7 +369,7 @@ func DeleteSurvey(c *gin.Context) {
 	}
 	// 获取问卷
 	survey, err := service.GetSurveyByID(data.ID)
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		code.AbortWithException(c, code.SurveyNotExist, errors.New("问卷不存在"))
 		return
 	} else if err != nil {
@@ -420,7 +420,7 @@ func GetSurveyAnswers(c *gin.Context) {
 	}
 	// 获取问卷
 	survey, err := service.GetSurveyByID(data.ID)
-	if err == gorm.ErrRecordNotFound {
+	if errors.Is(err, gorm.ErrRecordNotFound) {
 		code.AbortWithException(c, code.SurveyNotExist, errors.New("问卷不存在"))
 		return
 	} else if err != nil {

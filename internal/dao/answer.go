@@ -2,6 +2,7 @@ package dao
 
 import (
 	"context"
+	"errors"
 
 	database "QA-System/internal/pkg/database/mongodb"
 	"go.mongodb.org/mongo-driver/bson"
@@ -73,7 +74,7 @@ func (d *Dao) SaveAnswerSheet(ctx context.Context, answerSheet AnswerSheet, qids
 	var result AnswerSheet
 	err := d.mongo.Collection(database.QA).FindOne(ctx, filter).Decode(&result)
 	if err != nil {
-		if err == mongo.ErrNoDocuments {
+		if errors.Is(err, mongo.ErrNoDocuments) {
 			// 没有找到符合条件的记录，直接插入新记录
 			_, err := d.mongo.Collection(database.QA).InsertOne(ctx, answerSheet)
 			if err != nil {

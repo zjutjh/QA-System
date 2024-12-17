@@ -3,6 +3,7 @@ package service
 import (
 	"errors"
 	"fmt"
+	"image"
 	"image/jpeg"
 	"io"
 	"mime/multipart"
@@ -13,7 +14,6 @@ import (
 
 	"QA-System/internal/dao"
 	"QA-System/internal/models"
-	"github.com/disintegration/imaging"
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -126,7 +126,7 @@ func HandleImgUpload(c *gin.Context) (string, error) {
 	// 判断文件的MIME类型是否为图片
 	mime, err := mimetype.DetectFile(tempFile)
 	if err != nil || !strings.HasPrefix(mime.String(), "image/") {
-		return "", errors.New("文件类型不是图片: " + err.Error())
+		return "", errors.New("文件类型不是图片")
 	}
 	// 保存原始图片
 	filename := uuid.New().String() + ".jpg"
@@ -173,9 +173,16 @@ func isImageFile(file *multipart.FileHeader) bool {
 
 // 用于转换和压缩图像的函数
 func convertAndCompressImage(srcPath, dstPath string) error {
-	srcImg, err := imaging.Open(srcPath)
+	// 打开源图像文件
+	srcFile, err := safeOpenFile(srcPath)
 	if err != nil {
 		return err
+	}
+
+	// 解码图像
+	srcImg, _, err := image.Decode(srcFile)
+	if err != nil {
+		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
 	// 调整图像大小（根据需要进行调整）
@@ -296,6 +303,12 @@ func safeOpenFile(src string) (*os.File, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer func(srcFile *os.File) {
+		err := srcFile.Close()
+		if err != nil {
+			zap.L().Error("关闭文件失败", zap.Error(err))
+		}
+	}(srcFile)
 
 	return srcFile, nil
 }
