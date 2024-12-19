@@ -12,14 +12,18 @@ import (
 	"QA-System/internal/pkg/log"
 )
 
-func MongodbInit() *mongo.Collection {
+var QA string
+var Record string
+
+func MongodbInit() *mongo.Database {
 	// Get MongoDB connection information from the configuration file
 	user := global.Config.GetString("mongodb.user")
 	pass := global.Config.GetString("mongodb.pass")
 	host := global.Config.GetString("mongodb.host")
 	port := global.Config.GetString("mongodb.port")
 	db := global.Config.GetString("mongodb.db")
-	collection := global.Config.GetString("mongodb.collection")
+	QA = global.Config.GetString("mongodb.qa-collection")
+	Record = global.Config.GetString("mongodb.record-collection")
 
 	// 构建 MongoDB 连接字符串
 	dsn := fmt.Sprintf("mongodb://%v:%v@%v:%v/%v", user, pass, host, port, db)
@@ -36,7 +40,7 @@ func MongodbInit() *mongo.Collection {
 	}
 
 	// Set the MongoDB database
-	mdb := client.Database(db).Collection(collection)
+	mdb := client.Database(db)
 
 	// Print a log message to indicate successful connection to MongoDB
 	log.Logger.Info("Connected to MongoDB")

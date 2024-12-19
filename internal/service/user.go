@@ -16,7 +16,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
+	"time"
 )
 
 func GetSurveyByID(id int) (*models.Survey, error) {
@@ -24,53 +24,51 @@ func GetSurveyByID(id int) (*models.Survey, error) {
 	return survey, err
 }
 
-func GetQuestionsBySurveyID(id int) ([]models.Question, error) {
+func GetQuestionsBySurveyID(sid int) ([]models.Question, error) {
 	var questions []models.Question
-	questions, err := d.GetQuestionsBySurveyID(ctx, id)
+	questions, err := d.GetQuestionsBySurveyID(ctx, sid)
 	return questions, err
 }
 
 func GetOptionsByQuestionID(questionId int) ([]models.Option, error) {
+	var options []models.Option
 	options, err := d.GetOptionsByQuestionID(ctx, questionId)
 	return options, err
 }
 
 func GetQuestionByID(id int) (*models.Question, error) {
+	var question *models.Question
 	question, err := d.GetQuestionByID(ctx, id)
 	return question, err
 }
 
-
-
-func SubmitSurvey(sid int, data []dao.QuestionsList,time string) error {
+func SubmitSurvey(sid int, data []dao.QuestionsList, time string) error {
 	var answerSheet dao.AnswerSheet
 	answerSheet.SurveyID = sid
 	answerSheet.Time = time
 	answerSheet.Unique = true
-	qids:=make([]int,0)
+	qids := make([]int, 0)
 	for _, q := range data {
 		var answer dao.Answer
-		question,err := d.GetQuestionByID(ctx, q.QuestionID)
+		question, err := d.GetQuestionByID(ctx, q.QuestionID)
 		if err != nil {
 			return err
 		}
-		if question.QuestionType==3&&question.Unique{
-			qids=append(qids, q.QuestionID)
+		if question.QuestionType == 3 && question.Unique {
+			qids = append(qids, q.QuestionID)
 		}
 		answer.QuestionID = q.QuestionID
 		answer.SerialNum = q.SerialNum
 		answer.Content = q.Answer
 		answerSheet.Answers = append(answerSheet.Answers, answer)
 	}
-	err := d.SaveAnswerSheet(ctx, answerSheet,qids)
+	err := d.SaveAnswerSheet(ctx, answerSheet, qids)
 	if err != nil {
 		return err
 	}
 	err = d.IncreaseSurveyNum(ctx, sid)
 	return err
 }
-
-
 
 func HandleImgUpload(c *gin.Context) (string, error) {
 	// 保存图片文件
@@ -237,4 +235,8 @@ func HandleFileUpload(c *gin.Context) (string, error) {
 	urlHost := GetConfigUrl()
 	url := urlHost + "/public/file/" + filename
 	return url, nil
+}
+
+func CreateOauthRecord(stuId string, time time.Time, sid int) error {
+	return d.SaveRecordSheet(ctx, dao.RecordSheet{StudentID: stuId, Time: time}, sid)
 }

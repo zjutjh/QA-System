@@ -3,14 +3,12 @@ package database
 import (
 	"QA-System/internal/global/config"
 
-	"fmt"
 	"QA-System/internal/pkg/log"
+	"fmt"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
-
-
 
 func MysqlInit() *gorm.DB {
 
@@ -26,12 +24,12 @@ func MysqlInit() *gorm.DB {
 	})
 
 	if err != nil {
-		log.Logger.Fatal("Failed to connect to MySQL:"+ err.Error())
+		log.Logger.Fatal("Failed to connect to MySQL:" + err.Error())
 	}
 
 	err = autoMigrate(db)
 	if err != nil {
-		log.Logger.Fatal("DatabaseMigrateFailed"+ err.Error())
+		log.Logger.Fatal("DatabaseMigrateFailed" + err.Error())
 	}
 	log.Logger.Info("Connected to MySQL")
 	return db

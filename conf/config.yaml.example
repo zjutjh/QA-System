@@ -1,3 +1,7 @@
+server:
+  port: "8080"
+  debug: false
+
 mysql:
   name: QA
   host: "127.0.0.1"
@@ -19,20 +23,25 @@ redis:
 aes:
   key:              # AES加密密钥, 16位
 
+jwt:
+  key:              # JWT加密密钥
+
 mongodb:
   host: "127.0.0.1"
   port: 27017
   user: 
   pass:
-  db: QA
-  collection: QA
+  db: qa
+  qa-collection: qa          # 回答集合
+  record-collection: record  # 记录集合
 
 url:
   host: "https://example.com"  # 项目地址
 
 key: 
 
-
+user:
+  host: 
 
 log:
   development: true       # 是否开启开发模式  true: 开启 false: 关闭

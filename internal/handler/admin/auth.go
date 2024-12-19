@@ -7,7 +7,6 @@ import (
 	"QA-System/internal/service"
 	"errors"
 
-
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -57,7 +56,7 @@ func Login(c *gin.Context) {
 type RegisterData struct {
 	Username string `json:"username" binding:"required"`
 	Password string `json:"password" binding:"required"`
-	Key      string    `json:"key" binding:"required"`
+	Key      string `json:"key" binding:"required"`
 }
 
 // 注册
@@ -72,14 +71,14 @@ func Register(c *gin.Context) {
 	//判断是否有权限
 	adminKey := service.GetConfigKey()
 	if adminKey != data.Key {
-		c.Error(&gin.Error{Err: errors.New(data.Username+"没有权限"), Type: gin.ErrorTypeAny})
+		c.Error(&gin.Error{Err: errors.New(data.Username + "没有权限"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.NotSuperAdmin)
 		return
 	}
 	//判断用户是否存在
 	err = service.IsAdminExist(data.Username)
 	if err == nil {
-		c.Error(&gin.Error{Err: errors.New(data.Username+"用户已存在"), Type: gin.ErrorTypeAny})
+		c.Error(&gin.Error{Err: errors.New(data.Username + "用户已存在"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.UserExist)
 		return
 	}
@@ -145,7 +144,7 @@ type ResetPasswordData struct {
 	UserName string `json:"username" binding:"required"`
 }
 
-//重置密码
+// 重置密码
 func ResetPassword(c *gin.Context) {
 	var data ResetPasswordData
 	err := c.ShouldBindJSON(&data)
@@ -162,7 +161,7 @@ func ResetPassword(c *gin.Context) {
 		return
 	}
 	if admin.AdminType != 2 {
-		c.Error(&gin.Error{Err: errors.New(admin.Username+"没有权限"), Type: gin.ErrorTypeAny})
+		c.Error(&gin.Error{Err: errors.New(admin.Username + "没有权限"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.NoPermission)
 		return
 	}

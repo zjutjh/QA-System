@@ -8,9 +8,9 @@ import (
 	"gorm.io/gorm"
 )
 
-func (d *Dao) CreateSurvey(ctx context.Context, survey models.Survey)(models.Survey, error) {
+func (d *Dao) CreateSurvey(ctx context.Context, survey models.Survey) (models.Survey, error) {
 	err := d.orm.WithContext(ctx).Create(&survey).Error
-	return survey,err
+	return survey, err
 }
 
 func (d *Dao) UpdateSurveyStatus(ctx context.Context, surveyID int, status int) error {
@@ -18,8 +18,8 @@ func (d *Dao) UpdateSurveyStatus(ctx context.Context, surveyID int, status int) 
 	return err
 }
 
-func (d *Dao) UpdateSurvey(ctx context.Context, id int, title, desc, img string, deadline time.Time) error {
-	err := d.orm.WithContext(ctx).Model(&models.Survey{}).Where("id = ?", id).Updates(models.Survey{Title: title, Desc: desc, Img: img, Deadline: deadline}).Error
+func (d *Dao) UpdateSurvey(ctx context.Context, id int, surveyType, limit uint, verify bool, title, desc, img string, deadline, startTime time.Time) error {
+	err := d.orm.WithContext(ctx).Model(&models.Survey{}).Where("id = ?", id).Updates(models.Survey{Title: title, Desc: desc, Img: img, Deadline: deadline, DailyLimit: limit, Verify: verify, Type: surveyType, StartTime: startTime}).Error
 	return err
 }
 
@@ -39,7 +39,7 @@ func (d *Dao) GetSurveyByID(ctx context.Context, surveyID int) (*models.Survey, 
 func (d *Dao) GetSurveyByTitle(ctx context.Context, title string, num, size int) ([]models.Survey, *int64, error) {
 	var surveys []models.Survey
 	var sum int64
-	err := d.orm.WithContext(ctx).Model(models.Survey{}).Where("title like ?", "%"+title+"%").Order("CASE WHEN status = 2 THEN 0 ELSE 1 END").Count(&sum).Limit(size).Offset((num-1)*size).Find(&surveys).Error
+	err := d.orm.WithContext(ctx).Model(models.Survey{}).Where("title like ?", "%"+title+"%").Order("CASE WHEN status = 2 THEN 0 ELSE 1 END").Count(&sum).Limit(size).Offset((num - 1) * size).Find(&surveys).Error
 	return surveys, &sum, err
 }
 

@@ -14,19 +14,17 @@ import (
 
 var (
 	ctx = context.Background()
-	d  *dao.Dao
+	d   *dao.Dao
 )
 
-
-func ServiceInit(db *gorm.DB,mdb  *mongo.Collection){
-	d=dao.New(db,mdb)
+func ServiceInit(db *gorm.DB, mdb *mongo.Database) {
+	d = dao.New(db, mdb)
 }
-
 
 func GetConfigUrl() string {
 	url := GetRedis("url")
 	if url == "" {
-		url=global.Config.GetString("url.host")
+		url = global.Config.GetString("url.host")
 		SetRedis("url", url)
 	}
 	return url
@@ -35,12 +33,11 @@ func GetConfigUrl() string {
 func GetConfigKey() string {
 	key := GetRedis("key")
 	if key == "" {
-		key=global.Config.GetString("key")
+		key = global.Config.GetString("key")
 		SetRedis("key", key)
 	}
 	return key
 }
-
 
 func SetRedis(key string, value string) bool {
 	t := int64(900)

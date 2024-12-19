@@ -10,14 +10,13 @@ import (
 )
 
 type Dao struct {
-	orm    *gorm.DB
-	mongo *mongo.Collection
+	orm   *gorm.DB
+	mongo *mongo.Database
 }
 
-
-func New(orm *gorm.DB, mongo *mongo.Collection) *Dao {
+func New(orm *gorm.DB, mongo *mongo.Database) *Dao {
 	return &Dao{
-		orm:    orm,
+		orm:   orm,
 		mongo: mongo,
 	}
 }
@@ -63,4 +62,7 @@ type Daos interface {
 	GetAllSurveyByUserID(ctx context.Context, userId int) ([]models.Survey, error)
 	IncreaseSurveyNum(ctx context.Context, sid int) error
 
+	//record
+	SaveRecordSheet(ctx context.Context, answerSheet RecordSheet, sid int) error
+	DeleteRecordSheets(ctx context.Context, surveyID int) error
 }

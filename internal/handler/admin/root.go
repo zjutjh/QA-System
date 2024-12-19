@@ -31,7 +31,7 @@ func CreatrPermission(c *gin.Context) {
 		return
 	}
 	if admin.AdminType != 2 {
-		c.Error(&gin.Error{Err: errors.New(admin.Username+"没有权限"), Type: gin.ErrorTypeAny})
+		c.Error(&gin.Error{Err: errors.New(admin.Username + "没有权限"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.NoPermission)
 		return
 	}
@@ -57,7 +57,7 @@ func CreatrPermission(c *gin.Context) {
 		c.Error(&gin.Error{Err: errors.New("权限已存在"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.PermissionExist)
 		return
-	}else if err !=gorm.ErrRecordNotFound{
+	} else if err != gorm.ErrRecordNotFound {
 		c.Error(&gin.Error{Err: errors.New("查询权限失败原因: " + err.Error()), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.ServerError)
 		return
@@ -93,7 +93,7 @@ func DeletePermission(c *gin.Context) {
 		return
 	}
 	if admin.AdminType != 2 {
-		c.Error(&gin.Error{Err: errors.New(admin.Username+"没有权限"), Type: gin.ErrorTypeAny})
+		c.Error(&gin.Error{Err: errors.New(admin.Username + "没有权限"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.NoPermission)
 		return
 	}
@@ -117,7 +117,7 @@ func DeletePermission(c *gin.Context) {
 	//查询权限
 	err = service.CheckPermission(user.ID, data.SurveyID)
 	if err != nil {
-		c.Error(&gin.Error{Err: errors.New(user.Username+"权限不存在"), Type: gin.ErrorTypeAny})
+		c.Error(&gin.Error{Err: errors.New(user.Username + "权限不存在"), Type: gin.ErrorTypeAny})
 		utils.JsonErrorResponse(c, code.PermissionNotExist)
 		return
 	}

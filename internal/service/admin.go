@@ -71,7 +71,7 @@ func CheckPermission(id int, surveyID int) error {
 	return err
 }
 
-func CreateSurvey(id int, title string, desc string, img string, questions []dao.Question, status int, time time.Time) error {
+func CreateSurvey(id int, title string, desc string, img string, questions []dao.Question, status int, surveyType, limit uint, verify bool, time, startTime time.Time) error {
 	var survey models.Survey
 	survey.UserID = id
 	survey.Title = title
@@ -79,6 +79,10 @@ func CreateSurvey(id int, title string, desc string, img string, questions []dao
 	survey.Img = img
 	survey.Status = status
 	survey.Deadline = time
+	survey.Type = surveyType
+	survey.DailyLimit = limit
+	survey.Verify = verify
+	survey.StartTime = startTime
 	survey, err := d.CreateSurvey(ctx, survey)
 	if err != nil {
 		return err
@@ -92,14 +96,13 @@ func UpdateSurveyStatus(id int, status int) error {
 	return err
 }
 
-func UpdateSurvey(id int, title string, desc string, img string, questions []dao.Question, time time.Time) error {
+func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, desc string, img string, questions []dao.Question, time, startTime time.Time) error {
 	//遍历原有问题，删除对应选项
 	var oldQuestions []models.Question
 	var old_imgs []string
 	new_imgs := make([]string, 0)
 	//获取原有图片
 	oldQuestions, err := d.GetQuestionsBySurveyID(ctx, id)
-	fmt.Println(id)
 	if err != nil {
 		return err
 	}
@@ -115,7 +118,6 @@ func UpdateSurvey(id int, title string, desc string, img string, questions []dao
 		}
 		for _, oldOption := range oldOptions {
 			err = d.DeleteOption(ctx, oldOption.ID)
-			fmt.Println(oldOption.ID)
 			if err != nil {
 				return err
 			}
@@ -124,9 +126,17 @@ func UpdateSurvey(id int, title string, desc string, img string, questions []dao
 		if err != nil {
 			return err
 		}
+		err = d.DeleteAllQuestionCache(ctx)
+		if err != nil {
+			return err
+		}
+		err = d.DeleteAllOptionCache(ctx)
+		if err != nil {
+			return err
+		}
 	}
 	//修改问卷信息
-	err = d.UpdateSurvey(ctx, id, title, desc, img, time)
+	err = d.UpdateSurvey(ctx, id, surveyType, limit, verify, title, desc, img, time, startTime)
 	if err != nil {
 		return err
 	}
@@ -145,10 +155,6 @@ func UpdateSurvey(id int, title string, desc string, img string, questions []dao
 		}
 	}
 	return nil
-}
-
-func UpdateSurveyPart(id int, title string, desc string, img string,  time time.Time) error {
-	return d.UpdateSurvey(ctx, id, title, desc, img, time)
 }
 
 func UserInManage(uid int, sid int) bool {
@@ -197,6 +203,14 @@ func DeleteSurvey(id int) error {
 		}
 	}
 	err = d.DeleteQuestionBySurveyID(ctx, id)
+	if err != nil {
+		return err
+	}
+	err = d.DeleteAllQuestionCache(ctx)
+	if err != nil {
+		return err
+	}
+	err = d.DeleteAllOptionCache(ctx)
 	if err != nil {
 		return err
 	}
@@ -319,10 +333,11 @@ func GetSurveyResponse(surveys []models.Survey) []interface{} {
 	response := make([]interface{}, 0)
 	for _, survey := range surveys {
 		surveyResponse := map[string]interface{}{
-			"id":     survey.ID,
-			"title":  survey.Title,
-			"status": survey.Status,
-			"num":    survey.Num,
+			"id":          survey.ID,
+			"title":       survey.Title,
+			"status":      survey.Status,
+			"survey_type": survey.Type,
+			"num":         survey.Num,
 		}
 		response = append(response, surveyResponse)
 	}
@@ -377,6 +392,7 @@ func GetSurveyAnswersBySurveyID(sid int) ([]dao.AnswerSheet, error) {
 }
 
 func GetOptionByQIDAndAnswer(qid int, answer string) (*models.Option, error) {
+	var option *models.Option
 	option, err := d.GetOptionByQIDAndAnswer(ctx, qid, answer)
 	return option, err
 }
@@ -384,11 +400,6 @@ func GetOptionByQIDAndAnswer(qid int, answer string) (*models.Option, error) {
 func GetOptionByQIDAndSerialNum(qid int, serialNum int) (*models.Option, error) {
 	option, err := d.GetOptionByQIDAndSerialNum(ctx, qid, serialNum)
 	return option, err
-}
-
-func GetQuestionsByIDs(ids []int) ([]models.Question, error) {
-	questions, err := d.GetQuestionsByIDs(ctx, ids)
-	return questions, err
 }
 
 func contains(arr []string, str string) bool {
@@ -482,6 +493,8 @@ func createQuestionsAndOptions(questions []dao.Question, sid int) ([]string, err
 		q.Unique = question.Unique
 		q.OtherOption = question.OtherOption
 		q.QuestionType = question.QuestionType
+		q.MaximumOption = question.MaximumOption
+		q.MinimumOption = question.MinimumOption
 		q.Reg = question.Reg
 		imgs = append(imgs, question.Img)
 		q, err := d.CreateQuestion(ctx, q)
@@ -494,6 +507,7 @@ func createQuestionsAndOptions(questions []dao.Question, sid int) ([]string, err
 			o.QuestionID = q.ID
 			o.SerialNum = option.SerialNum
 			o.Img = option.Img
+			o.Description = option.Description
 			imgs = append(imgs, option.Img)
 			err := d.CreateOption(ctx, o)
 			if err != nil {
@@ -738,9 +752,30 @@ func HandleDownloadFile(answers dao.AnswersResonse, survey *models.Survey) (stri
 	return url, nil
 }
 
-
 func UpdateAdminPassword(id int, password string) error {
 	password = utils.AesEncrypt(password)
 	err := d.UpdateUserPassword(ctx, id, password)
 	return err
+}
+
+func CreateQuestionPre(name string, value []string) error {
+	// 将String[]类型转化为String,以逗号分隔
+	pre := strings.Join(value, ",")
+	err := d.CreateType(ctx, name, pre)
+	return err
+}
+
+func GetQuestionPre(name string) ([]string, error) {
+	value, err := d.GetType(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	// 将预先信息转化为String[]类型
+	pre := strings.Split(value, ",")
+	return pre, nil
+}
+
+func DeleteOauthRecord(sid int) error {
+	return d.DeleteRecordSheets(ctx, sid)
+
 }
