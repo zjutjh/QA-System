@@ -6,8 +6,8 @@ import (
 	"time"
 )
 
-// FromSurveyIDToStream 通过问卷ID将问卷信息发送到Redis Stream
-func FromSurveyIDToStream(surveyID int) error {
+// FromSurveyIDToMsg 通过问卷ID将问卷信息发送到消息队列（直接发给插件好啦）
+func FromSurveyIDToMsg(surveyID int) error {
 	// 获取问卷信息
 	survey, err := GetSurveyByID(surveyID)
 	if err != nil {
