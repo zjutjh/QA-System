@@ -60,18 +60,22 @@ plugins:
   order:
     - "plugin1"
     - "plugin2" 
-    - "email_notifier"
+    - "betterEmailNotifier"
 
 # 邮件通知配置
-email_notifier:
+emailNotifier:
   smtp: 
-    host: "smtp.gmail.com"
+    host: "smtp.qq.com"
     port: 587
-    username: "your_email@gmail.com"
-    password: "your_app_password"  # 使用Gmail需生成应用专用密码
-    from: "your_email@gmail.com"
-  recipients:
-    - "admin@example.com"
-  template:
+    username: "example@qq.com"
+    password: "hxjrwjzgdxoobdcg"          # 不支持双重验证hxjrwjzgdxoobdcg
+    from: "example@qq.com"                
+    tinmeout: 10 # 超时时长，单位秒
+  template:                                     # 模板（已弃用）
     subject: "新问卷回复通知 - {{.survey_title}}"
     body: "您收到一条新的问卷回复，请及时查看。"
+  worker:                                       # 工作协程（better版本已弃用）
+    num: 3  # 工作协程数量
+  consumer:                                     # 消费者（better版本已弃用）
+    batch_size: 10      # 消费者批量处理数量
+    idle_timeout: 1800  # 超时时长，30分钟，单位秒

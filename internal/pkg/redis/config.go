@@ -2,6 +2,7 @@ package redis
 
 import (
 	"QA-System/internal/global/config"
+
 	"github.com/redis/go-redis/v9"
 	"github.com/zjutjh/WeJH-SDK/redisHelper"
 )
@@ -9,8 +10,9 @@ import (
 // RedisClient Redis客户端
 var (
 	RedisClient *redis.Client
-	StreamName  = config.Config.GetString("redis.stream_name")
-	GroupName   = config.Config.GetString("redis.group_name")
+	// Redis Stream暂时用不上了
+	// StreamName  = config.Config.GetString("redis.stream_name")
+	// GroupName   = config.Config.GetString("redis.group_name")
 )
 
 // getConfig 获取 Redis 配置

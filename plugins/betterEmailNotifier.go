@@ -54,7 +54,7 @@ func (p *BetterEmailNotifier) initialize() error {
 // GetMetadata 返回插件的元数据
 func (p *BetterEmailNotifier) GetMetadata() extension.PluginMetadata {
 	return extension.PluginMetadata{
-		Name:        "BetterEmailNotifier",
+		Name:        "betterEmailNotifier",
 		Version:     "0.1.0",
 		Author:      "SituChengxiang, Copilot, Qwen2.5, DeepSeek",
 		Description: "Send email notifications for new survey responses",

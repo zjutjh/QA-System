@@ -80,7 +80,7 @@ func SubmitSurvey(sid int, data []dao.QuestionsList, t string) error {
 	}
 
 	// 发送消息到消息队列
-	err = FromSurveyIDToStream(sid)
+	err = FromSurveyIDToMsg(sid)
 	return err
 }
 

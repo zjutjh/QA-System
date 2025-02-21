@@ -85,6 +85,7 @@ func (p *EmailNotifier) GetMetadata() extension.PluginMetadata {
 
 // Execute 启动消费者
 func (p *EmailNotifier) Execute() error {
+	fmt.Println("Another version of the email notifier has been released, you can change to that one as this one relies on redis stream")
 	ctx := context.Background()
 	zap.L().Info("Email notifier started", zap.Int("workers", p.workerNum))
 
@@ -247,8 +248,8 @@ func (p *EmailNotifier) sendEmail(data map[string]any) error {
 			zap.L().Error("Failed to send email", zap.Error(err))
 			return err
 		}
-		// 发送成功后确认消息，用QA系统里的redis包打包里的AckMessage函数，参数少一点
-		err = redis.AckMessage(ctx, data["id"].(string))
+		// // 发送成功后确认消息，用QA系统里的redis包打包里的AckMessage函数，参数少一点
+		// err = redis.AckMessage(ctx, data["id"].(string))
 		if err != nil {
 			zap.L().Warn("Failed to ack message", zap.Error(err))
 		}
