@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"QA-System/internal/global/config"
-	"QA-System/internal/pkg/extension"
 	"QA-System/internal/pkg/redis"
+	"QA-System/pkg/extension"
 
 	redisv9 "github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -39,7 +39,7 @@ func init() {
 	if err := notifier.initialize(); err != nil {
 		panic(fmt.Sprintf("Failed to initialize email_notifier: %v", err))
 	}
-	extension.RegisterPlugin(notifier)
+	extension.GetDefaultManager().RegisterPlugin(notifier)
 }
 
 // initialize 从配置文件中读取配置信息
@@ -55,7 +55,7 @@ func (p *EmailNotifier) initialize() error {
 		return errors.New("invalid SMTP configuration, this may lead to email sending failure")
 	}
 
-	// 读取Stream配置
+	// 读取Stream配置（已准备弃用）
 	p.streamName = config.Config.GetString("redis.stream.name")
 	p.groupName = config.Config.GetString("redis.stream.group")
 
@@ -76,7 +76,7 @@ func (p *EmailNotifier) initialize() error {
 func (p *EmailNotifier) GetMetadata() extension.PluginMetadata {
 	_ = p
 	return extension.PluginMetadata{
-		Name:        "email_notifier",
+		Name:        "emailNotifier",
 		Version:     "0.1.0",
 		Author:      "SituChengxiang, Copilot, Qwen2.5, DeepSeek",
 		Description: "Send email notifications for new survey responses",
@@ -218,6 +218,7 @@ func (p *EmailNotifier) sendEmail(data map[string]any) error {
 
 	go func() {
 		// 创建邮件
+		fmt.Println("Sending email")
 		m := gomail.NewMessage()
 		m.SetHeader("From", p.from)
 		m.SetHeader("To", data["recipient"].(string))

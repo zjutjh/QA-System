@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"QA-System/internal/pkg/extension"
+	"QA-System/pkg/extension"
 )
 
 // Plugin2 示例插件2的结构
@@ -30,5 +30,5 @@ func (p *Plugin2) Execute() error {
 }
 
 func init() {
-	extension.RegisterPlugin(&Plugin2{})
+	extension.GetDefaultManager().RegisterPlugin(&Plugin2{})
 }

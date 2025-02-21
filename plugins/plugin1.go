@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"time"
 
-	"QA-System/internal/pkg/extension"
+	"QA-System/pkg/extension"
 )
 
 const (
@@ -38,5 +38,6 @@ func (p *Plugin1) Execute() error {
 }
 
 func init() {
-	extension.RegisterPlugin(&Plugin1{})
+	// 注册插件到默认管理器
+	extension.GetDefaultManager().RegisterPlugin(&Plugin1{})
 }

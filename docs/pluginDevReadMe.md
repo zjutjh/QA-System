@@ -55,7 +55,7 @@ type Plugin interface {
 package plugins
 
 import (
-	"QA-System/internal/pkg/extension"
+	"QA-System/pkg/extension"
 	"fmt"
 )
 
@@ -95,7 +95,7 @@ func init() {
 package plugins
 
 import (
-    "QA-System/internal/pkg/extension"
+    "QA-System/pkg/extension"
     "fmt"
 )
 
@@ -150,3 +150,13 @@ plugins:
 - [ ] 插件监测
 - [ ] 更好的微架构融入
 - [ ] 性能优化
+
+### 插件管理器的 OOP优化
+
+关键的有待改进点说明
+|改进点|原实现问题|改进方案优势
+|----|----|----|
+|直接依赖具体日志库|耦合zap实现，难以替换日志系统|通过接口抽象，支持任意日志实现|
+|配置硬编码|直接调用全局config.Config|依赖接口，方便测试和扩展|
+大而全的接口|接口方法过多违反ISP原则|拆分细粒度接口，按需组合|
+|缺乏生命周期管理|没有明确的初始化/销毁方法|添加Start()/Stop()等生命周期方法|
