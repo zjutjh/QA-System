@@ -72,19 +72,23 @@ func CreateSurvey(c *gin.Context) {
 		question.SerialNum = i + 1
 
 		// 检测多选题目的最多选项数和最少选项数
-		if (question.QuestionSetting.QuestionType == 2) && (question.
-			QuestionSetting.MaximumOption < question.QuestionSetting.MinimumOption) {
+		if (question.QuestionSetting.QuestionType == 2 && data.SurveyType == 0) ||
+    (question.QuestionSetting.QuestionType == 1 && data.SurveyType == 1)&& 
+    (question.QuestionSetting.MaximumOption < question.QuestionSetting.MinimumOption) {
 			code.AbortWithException(c, code.OptionNumError, errors.New("多选最多选项数小于最少选项数"))
 			return
 		}
 		// 检查多选选项和最少选项数是否符合要求
-		if (question.QuestionSetting.QuestionType == 2) && uint(len(question.
-			Options)) < question.QuestionSetting.MinimumOption {
+		if (question.QuestionSetting.QuestionType == 2 && data.SurveyType == 0) ||
+    (question.QuestionSetting.QuestionType == 1 && data.SurveyType == 1) && 
+    uint(len(question.Options)) < question.QuestionSetting.MinimumOption {
 			code.AbortWithException(c, code.OptionNumError, errors.New("选项数量小于最少选项数"))
 			return
 		}
 		// 检查最多选项数是否符合要求
-		if (question.QuestionSetting.QuestionType == 2) && question.QuestionSetting.MaximumOption == 0 {
+		if (question.QuestionSetting.QuestionType == 2 && data.SurveyType == 0)||
+    (question.QuestionSetting.QuestionType == 1 && data.SurveyType == 1) && 
+    question.QuestionSetting.MaximumOption == 0 {
 			code.AbortWithException(c, code.OptionNumError, errors.New("最多选项数小于等于0"))
 			return
 		}
@@ -314,19 +318,23 @@ func UpdateSurvey(c *gin.Context) {
 		question.SerialNum = i + 1
 
 		// 检测多选题目的最多选项数和最少选项数
-		if (question.QuestionSetting.QuestionType == 2) && (question.
-			QuestionSetting.MaximumOption < question.QuestionSetting.MinimumOption) {
+		if (question.QuestionSetting.QuestionType == 2 && data.SurveyType ==0) ||
+    (question.QuestionSetting.QuestionType == 1 && data.SurveyType ==1) && 
+    (question.QuestionSetting.MaximumOption < question.QuestionSetting.MinimumOption) {
 			code.AbortWithException(c, code.OptionNumError, errors.New("多选最多选项数小于最少选项数"))
 			return
 		}
 		// 检查多选选项和最少选项数是否符合要求
-		if (question.QuestionSetting.QuestionType == 2) && uint(len(question.
-			Options)) < question.QuestionSetting.MinimumOption {
+		if (question.QuestionSetting.QuestionType == 2 && data.SurveyType ==0)||
+    (question.QuestionSetting.QuestionType == 1 && data.SurveyType ==1) && 
+    uint(len(question.Options)) < question.QuestionSetting.MinimumOption {
 			code.AbortWithException(c, code.OptionNumError, errors.New("选项数量小于最少选项数"))
 			return
 		}
 		// 检查最多选项数是否符合要求
-		if question.QuestionSetting.QuestionType == 2 && question.QuestionSetting.MaximumOption == 0 {
+		if (question.QuestionSetting.QuestionType == 2 && data.SurveyType ==0)||
+    (question.QuestionSetting.QuestionType == 1 && data.SurveyType ==1) && 
+    question.QuestionSetting.MaximumOption == 0 {
 			code.AbortWithException(c, code.OptionNumError, errors.New("最多选项数小于等于0"))
 			return
 		}
@@ -458,19 +466,15 @@ func GetAllSurvey(c *gin.Context) {
 		return
 	}
 	// 获取问卷
-	var response []any
 	var surveys []model.Survey
-	var totalPageNum *int64
 	if user.AdminType == 2 {
-		surveys, totalPageNum, err = service.GetAllSurvey(data.PageNum, data.PageSize, data.Title)
+		surveys, err = service.GetAllSurvey()
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
-		surveys = service.SortSurvey(surveys)
-		response = service.GetSurveyResponse(surveys)
 	} else {
-		surveys, err = service.GetAllSurveyByUserID(user.ID)
+		surveys, err = service.GetSurveyByUserID(user.ID)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
@@ -488,10 +492,10 @@ func GetAllSurvey(c *gin.Context) {
 			}
 			surveys = append(surveys, *managedSurvey)
 		}
-		surveys = service.SortSurvey(surveys)
-		response = service.GetSurveyResponse(surveys)
-		response, totalPageNum = service.ProcessResponse(response, data.PageNum, data.PageSize, data.Title)
 	}
+	surveys = service.SortSurvey(surveys)
+	response := service.GetSurveyResponse(surveys)
+	response, totalPageNum := service.ProcessResponse(response, data.PageNum, data.PageSize, data.Title)
 
 	utils.JsonSuccessResponse(c, gin.H{
 		"survey_list":    response,

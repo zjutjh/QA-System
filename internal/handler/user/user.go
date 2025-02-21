@@ -86,7 +86,7 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 		// 判断多选题选项数量是否符合要求
-		if question.QuestionType == 2 {
+		if (question.QuestionType == 2 && survey.Type == 0) || (question.QuestionType == 1 && survey.Type == 1) {
 			length := uint(len(strings.Split(q.Answer, "┋")))
 			if question.MinimumOption != 0 && length < question.MinimumOption {
 				code.AbortWithException(c, code.OptionNumError, errors.New("问题"+strconv.Itoa(q.QuestionID)+"选项数量不符合要求"))
