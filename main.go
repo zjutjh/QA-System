@@ -26,7 +26,7 @@ func main() {
 	// 初始化日志系统
 	log.ZapInit()
 
-	// 把参数给到插件，基本已弃用
+	// 把参数传给插件管理器，已弃用
 	// params := map[string]any{}
 
 	// err := extension.ExecutePlugins()
@@ -34,6 +34,7 @@ func main() {
 	// 	zap.L().Error("Error executing plugins", zap.Error(err), zap.Any("params", params))
 	// 	return
 	// }
+	// 初始化插件管理器并加载插件
 	manager := extension.GetDefaultManager()
 	manager.LoadPlugins()
 	err := manager.ExecutePlugins()

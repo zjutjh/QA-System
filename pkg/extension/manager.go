@@ -31,7 +31,7 @@ type PluginManagerInterface interface {
 	ExecutePlugins() error
 }
 
-// NewPluginManager 创建一个新的插件管理器实例，可以用自己的，也可以手动指定
+// NewPluginManager 创建一个新的插件管理器实例，可以用自己的，也可以手动指定（真的需要吗？？？）
 func NewPluginManager(logger *zap.Logger) *PluginManager {
 	return &PluginManager{
 		plugins: make(map[string]Plugin),

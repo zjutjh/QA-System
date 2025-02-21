@@ -218,7 +218,6 @@ func (p *EmailNotifier) sendEmail(data map[string]any) error {
 
 	go func() {
 		// 创建邮件
-		fmt.Println("Sending email")
 		m := gomail.NewMessage()
 		m.SetHeader("From", p.from)
 		m.SetHeader("To", data["recipient"].(string))
