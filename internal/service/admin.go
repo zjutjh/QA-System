@@ -77,13 +77,10 @@ func CheckPermission(id int, surveyID int) error {
 }
 
 // CreateSurvey 创建问卷
-func CreateSurvey(id int, title string, desc string, img string, questions []dao.Question,
-	status int, surveyType, limit uint, verify bool, ddl, startTime time.Time) error {
+func CreateSurvey(id int, question_list []dao.
+	QuestionList, status int, surveyType, limit uint, verify bool, ddl, startTime time.Time) error {
 	var survey model.Survey
 	survey.UserID = id
-	survey.Title = title
-	survey.Desc = desc
-	survey.Img = img
 	survey.Status = status
 	survey.Deadline = ddl
 	survey.Type = surveyType
@@ -94,7 +91,7 @@ func CreateSurvey(id int, title string, desc string, img string, questions []dao
 	if err != nil {
 		return err
 	}
-	_, err = createQuestionsAndOptions(questions, survey.ID)
+	_, err = createQuestionsAndOptions(question_list, survey.ID)
 	return err
 }
 
@@ -105,8 +102,8 @@ func UpdateSurveyStatus(id int, status int) error {
 }
 
 // UpdateSurvey 更新问卷
-func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, desc string,
-	img string, questions []dao.Question, ddl, startTime time.Time) error {
+func UpdateSurvey(id int, question_config dao.QuestionConfig, surveyType,
+	limit uint, verify bool, desc string, title string, ddl, startTime time.Time) error {
 	// 遍历原有问题，删除对应选项
 	var oldQuestions []model.Question
 	var old_imgs []string
@@ -116,7 +113,7 @@ func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, des
 	if err != nil {
 		return err
 	}
-	old_imgs, err = getOldImgs(id, oldQuestions)
+	old_imgs, err = getOldImgs(oldQuestions)
 	if err != nil {
 		return err
 	}
@@ -146,13 +143,13 @@ func UpdateSurvey(id int, surveyType, limit uint, verify bool, title string, des
 		}
 	}
 	// 修改问卷信息
-	err = d.UpdateSurvey(ctx, id, surveyType, limit, verify, title, desc, img, ddl, startTime)
+	err = d.UpdateSurvey(ctx, id, surveyType, limit, verify, desc, title, ddl, startTime)
 	if err != nil {
 		return err
 	}
-	new_imgs = append(new_imgs, img)
+	new_imgs = append(new_imgs, question_config.QuestionList[1].Img)
 	// 重新添加问题和选项
-	imgs, err := createQuestionsAndOptions(questions, id)
+	imgs, err := createQuestionsAndOptions(question_config.QuestionList, id)
 	if err != nil {
 		return err
 	}
@@ -189,7 +186,7 @@ func DeleteSurvey(id int) error {
 		return err
 	}
 	// 删除图片
-	imgs, err := getDelImgs(id, questions, answerSheets)
+	imgs, err := getDelImgs(questions, answerSheets)
 	if err != nil {
 		return err
 	}
@@ -428,17 +425,12 @@ func contains(arr []string, str string) bool {
 	return false
 }
 
-func getOldImgs(id int, questions []model.Question) ([]string, error) {
+func getOldImgs(questions []model.Question) ([]string, error) {
 	imgs := make([]string, 0)
-	survey, err := d.GetSurveyByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	imgs = append(imgs, survey.Img)
 	for _, question := range questions {
 		imgs = append(imgs, question.Img)
 		var options []model.Option
-		options, err = d.GetOptionsByQuestionID(ctx, question.ID)
+		options, err := d.GetOptionsByQuestionID(ctx, question.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -449,17 +441,12 @@ func getOldImgs(id int, questions []model.Question) ([]string, error) {
 	return imgs, nil
 }
 
-func getDelImgs(id int, questions []model.Question, answerSheets []dao.AnswerSheet) ([]string, error) {
+func getDelImgs(questions []model.Question, answerSheets []dao.AnswerSheet) ([]string, error) {
 	imgs := make([]string, 0)
-	survey, err := d.GetSurveyByID(ctx, id)
-	if err != nil {
-		return nil, err
-	}
-	imgs = append(imgs, survey.Img)
 	for _, question := range questions {
 		imgs = append(imgs, question.Img)
 		var options []model.Option
-		options, err = d.GetOptionsByQuestionID(ctx, question.ID)
+		options, err := d.GetOptionsByQuestionID(ctx, question.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -497,28 +484,28 @@ func getDelFiles(answerSheets []dao.AnswerSheet) ([]string, error) {
 	return files, nil
 }
 
-func createQuestionsAndOptions(questions []dao.Question, sid int) ([]string, error) {
+func createQuestionsAndOptions(question_list []dao.QuestionList, sid int) ([]string, error) {
 	imgs := make([]string, 0)
-	for _, question := range questions {
+	for _, question_list := range question_list {
 		var q model.Question
-		q.SerialNum = question.SerialNum
+		q.SerialNum = question_list.SerialNum
 		q.SurveyID = sid
-		q.Subject = question.Subject
-		q.Description = question.Description
-		q.Img = question.Img
-		q.Required = question.Required
-		q.Unique = question.Unique
-		q.OtherOption = question.OtherOption
-		q.QuestionType = question.QuestionType
-		q.MaximumOption = question.MaximumOption
-		q.MinimumOption = question.MinimumOption
-		q.Reg = question.Reg
-		imgs = append(imgs, question.Img)
+		q.Subject = question_list.Subject
+		q.Description = question_list.Description
+		q.Img = question_list.Img
+		q.Required = question_list.QuestionSetting.Required
+		q.Unique = question_list.QuestionSetting.Unique
+		q.OtherOption = question_list.QuestionSetting.OtherOption
+		q.QuestionType = question_list.QuestionSetting.QuestionType
+		q.MaximumOption = question_list.QuestionSetting.MaximumOption
+		q.MinimumOption = question_list.QuestionSetting.MinimumOption
+		q.Reg = question_list.QuestionSetting.Reg
+		imgs = append(imgs, question_list.Img)
 		q, err := d.CreateQuestion(ctx, q)
 		if err != nil {
 			return nil, err
 		}
-		for _, option := range question.Options {
+		for _, option := range question_list.Options {
 			var o model.Option
 			o.Content = option.Content
 			o.QuestionID = q.ID

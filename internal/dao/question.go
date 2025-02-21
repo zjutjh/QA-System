@@ -10,13 +10,33 @@ import (
 	"QA-System/internal/pkg/redis"
 )
 
-// Question 问题模型
-type Question struct {
-	ID            int      `json:"id"`
-	SerialNum     int      `json:"serial_num"`                                         // 题目序号
-	Subject       string   `json:"subject"`                                            // 问题
-	Description   string   `json:"description"`                                        // 问题描述
-	Img           string   `json:"img"`                                                // 图片
+// BaseConfig 基本配置模型
+type BaseConfig struct {
+	StartTime  string `json:"start_time"`
+	EndTime    string `json:"end_time"`
+	DailyLimit uint   `json:"day_limit"` // 问卷每日填写限制
+	Verify     bool   `json:"verify"`    // 问卷是否需要统一验证
+}
+
+// QuestionConfig 问题配置模型
+type QuestionConfig struct {
+	Desc         string         `json:"desc" `
+	Title        string         `json:"title"`
+	QuestionList []QuestionList `json:"question_list"`
+}
+
+// QuestionList 问题列表模型
+type QuestionList struct {
+	SerialNum       int             `json:"serial_num"`   // 题目序号
+	Subject         string          `json:"subject"`      // 问题
+	Description     string          `json:"description"`  // 问题描述
+	Img             string          `json:"img"`          // 图片
+	QuestionSetting QuestionSetting `json:"ques_setting"` // 问题设置
+	Options         []Option        `json:"options"`      // 选项
+}
+
+// QuestionSetting 问题设置模型
+type QuestionSetting struct {
 	Required      bool     `json:"required"`                                           // 是否必填
 	Unique        bool     `json:"unique"`                                             // 是否唯一
 	OtherOption   bool     `json:"other_option"`                                       // 是否有其他选项
@@ -30,7 +50,6 @@ type Question struct {
 // QuestionsList 问题列表模型
 type QuestionsList struct {
 	QuestionID int    `json:"question_id" binding:"required"`
-	SerialNum  int    `json:"serial_num"`
 	Answer     string `json:"answer"`
 }
 

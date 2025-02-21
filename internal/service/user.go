@@ -65,7 +65,6 @@ func SubmitSurvey(sid int, data []dao.QuestionsList, t string) error {
 			qids = append(qids, q.QuestionID)
 		}
 		answer.QuestionID = q.QuestionID
-		answer.SerialNum = q.SerialNum
 		answer.Content = q.Answer
 		answerSheet.Answers = append(answerSheet.Answers, answer)
 	}
