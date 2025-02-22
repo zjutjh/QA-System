@@ -38,11 +38,11 @@ func init() {
 // initialize 从配置文件中读取配置信息
 func (p *BetterEmailNotifier) initialize() error {
 	// 读取SMTP配置
-	p.smtpHost = config.Config.GetString("email_notifier.smtp.host")
-	p.smtpPort = config.Config.GetInt("email_notifier.smtp.port")
-	p.smtpUsername = config.Config.GetString("email_notifier.smtp.username")
-	p.smtpPassword = config.Config.GetString("email_notifier.smtp.password")
-	p.from = config.Config.GetString("email_notifier.smtp.from")
+	p.smtpHost = config.Config.GetString("emailNotifier.smtp.host")
+	p.smtpPort = config.Config.GetInt("emailNotifier.smtp.port")
+	p.smtpUsername = config.Config.GetString("emailNotifier.smtp.username")
+	p.smtpPassword = config.Config.GetString("emailNotifier.smtp.password")
+	p.from = config.Config.GetString("emailNotifier.smtp.from")
 
 	if p.smtpHost == "" || p.smtpUsername == "" || p.smtpPassword == "" || p.from == "" {
 		return errors.New("invalid SMTP configuration, this may lead to email sending failure")

@@ -37,7 +37,7 @@ func init() {
 		consumerNew: "consumerNew",
 	}
 	if err := notifier.initialize(); err != nil {
-		panic(fmt.Sprintf("Failed to initialize email_notifier: %v", err))
+		panic(fmt.Sprintf("Failed to initialize emailnotifier: %v", err))
 	}
 	extension.GetDefaultManager().RegisterPlugin(notifier)
 }
@@ -45,11 +45,11 @@ func init() {
 // initialize 从配置文件中读取配置信息
 func (p *EmailNotifier) initialize() error {
 	// 读取SMTP配置
-	p.smtpHost = config.Config.GetString("email_notifier.smtp.host")
-	p.smtpPort = config.Config.GetInt("email_notifier.smtp.port")
-	p.smtpUsername = config.Config.GetString("email_notifier.smtp.username")
-	p.smtpPassword = config.Config.GetString("email_notifier.smtp.password")
-	p.from = config.Config.GetString("email_notifier.smtp.from")
+	p.smtpHost = config.Config.GetString("emailnotifier.smtp.host")
+	p.smtpPort = config.Config.GetInt("emailnotifier.smtp.port")
+	p.smtpUsername = config.Config.GetString("emailnotifier.smtp.username")
+	p.smtpPassword = config.Config.GetString("emailnotifier.smtp.password")
+	p.from = config.Config.GetString("emailnotifier.smtp.from")
 
 	if p.smtpHost == "" || p.smtpUsername == "" || p.smtpPassword == "" || p.from == "" {
 		return errors.New("invalid SMTP configuration, this may lead to email sending failure")
@@ -64,7 +64,7 @@ func (p *EmailNotifier) initialize() error {
 	}
 
 	// 读取工作协程配置
-	p.workerNum = config.Config.GetInt("email_notifier.worker.num")
+	p.workerNum = config.Config.GetInt("emailnotifier.worker.num")
 	if p.workerNum <= 0 {
 		p.workerNum = 3 // 默认3个工作协程
 	}
