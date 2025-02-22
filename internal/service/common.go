@@ -7,6 +7,7 @@ import (
 	"QA-System/internal/dao"
 	global "QA-System/internal/global/config"
 	r "QA-System/internal/pkg/redis"
+
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
@@ -19,6 +20,7 @@ var (
 // Init 函数用于初始化服务。
 func Init(db *gorm.DB, mdb *mongo.Database) {
 	d = dao.New(db, mdb)
+	d.InitializeCache()
 }
 
 // GetConfigUrl 获取配置url

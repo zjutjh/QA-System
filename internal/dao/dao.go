@@ -22,11 +22,6 @@ func New(orm *gorm.DB, mongodb *mongo.Database) *Dao {
 		orm:   orm,
 		mongo: mongodb,
 	}
-
-	// 初始化用户邮箱缓存和其清理操作
-	dao.InitializeCache()
-	go dao.StartCacheCleaner()
-
 	return dao
 }
 
