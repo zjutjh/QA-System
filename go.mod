@@ -2,7 +2,7 @@ module QA-System
 
 go 1.23.0
 
-toolchain go1.24.0
+toolchain go1.23.6
 
 require (
 	github.com/gin-gonic/gin v1.10.0
@@ -18,6 +18,7 @@ require (
 
 require (
 	github.com/bytedance/gopkg v0.1.1
+	github.com/jellydator/ttlcache/v3 v3.3.0
 	github.com/redis/go-redis/v9 v9.7.1
 	github.com/zjutjh/WeJH-SDK v0.2.1
 	gopkg.in/gomail.v2 v2.0.0-20160411212932-81ebce5c23df
@@ -38,7 +39,6 @@ require (
 	github.com/gorilla/securecookie v1.1.2 // indirect
 	github.com/gorilla/sessions v1.4.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
-	github.com/jellydator/ttlcache/v3 v3.3.0 // indirect
 	github.com/jinzhu/inflection v1.0.0 // indirect
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
