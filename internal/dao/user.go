@@ -2,29 +2,25 @@ package dao
 
 import (
 	"context"
-	"sync"
 	"time"
 
 	"QA-System/internal/model"
 
+	"github.com/jellydator/ttlcache/v3"
 	"go.uber.org/zap"
 )
 
 // emailCache 用户邮箱缓存
 var (
-	emailCache sync.Map
+	emailCache *ttlcache.Cache[int, string]
 	cacheTTL   = 30 * time.Minute
-	cacheMux   sync.RWMutex
 )
-
-// emailCacheItem 缓存项结构
-type emailCacheItem struct {
-	email     string
-	timestamp time.Time
-}
 
 // InitializeCache 初始化用户邮箱缓存
 func (d *Dao) InitializeCache() {
+	emailCache = ttlcache.New(ttlcache.WithTTL[int, string](cacheTTL))
+	go emailCache.Start()
+
 	users := []model.User{}
 	result := d.orm.Model(&model.User{}).Find(&users)
 
@@ -34,29 +30,8 @@ func (d *Dao) InitializeCache() {
 	}
 
 	for _, user := range users {
-		emailCache.Store(user.ID, emailCacheItem{
-			email:     user.NotifyEmail,
-			timestamp: time.Now(),
-		})
+		emailCache.Set(user.ID, user.NotifyEmail, cacheTTL)
 	}
-}
-
-// StartCacheCleanup 启动清理过期缓存的 goroutine
-func (_ *Dao) StartCacheCleaner() {
-	ticker := time.NewTicker(cacheTTL / 2)
-	go func() {
-		for range ticker.C {
-			now := time.Now()
-			emailCache.Range(func(key, value any) bool {
-				cacheItem := value.(emailCacheItem)
-				if now.Sub(cacheItem.timestamp) > cacheTTL {
-					emailCache.Delete(key)
-					zap.L().Info("delete expired email cache", zap.Int("uid", key.(int)))
-				}
-				return true
-			})
-		}
-	}()
 }
 
 // GetUserByUsername 根据用户名获取用户
@@ -92,33 +67,23 @@ func (d *Dao) UpdateUserEmail(ctx context.Context, uid int, email string) error 
 		return result.Error
 	}
 	// 同步更新缓存
-	cacheMux.Lock()
-	emailCache.Store(uid, emailCacheItem{
-		email:     email,
-		timestamp: time.Now(),
-	})
-	defer cacheMux.Unlock()
+	emailCache.Set(uid, email, cacheTTL)
 	return result.Error
 }
 
 // GetUserEmailByID 根据用户ID获取用户邮箱
 func (d *Dao) GetUserEmailByID(ctx context.Context, uid int) (string, error) {
 	// 尝试从缓存获取
-	cacheMux.RLock()
-	if item, ok := emailCache.Load(uid); ok {
-		cacheItem := item.(emailCacheItem)
-		if time.Since(cacheItem.timestamp) < cacheTTL {
-			cacheMux.RUnlock()
-			return cacheItem.email, nil
-		}
-		emailCache.Delete(uid)
+	item := emailCache.Get(uid)
+	if item != nil {
+		return item.Value(), nil
 	}
-	defer cacheMux.RUnlock()
 
 	// 缓存未命中，查询数据库
 	user, err := d.GetUserByID(ctx, uid)
 	if err != nil {
 		return "", err
 	}
+	emailCache.Set(uid, user.NotifyEmail, cacheTTL)
 	return user.NotifyEmail, nil
 }
