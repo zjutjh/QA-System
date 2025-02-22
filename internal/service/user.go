@@ -18,6 +18,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/nfnt/resize"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 )
 
@@ -54,6 +55,7 @@ func SubmitSurvey(sid int, data []dao.QuestionsList, t string) error {
 	answerSheet.SurveyID = sid
 	answerSheet.Time = t
 	answerSheet.Unique = true
+	answerSheet.AnswerID = primitive.NewObjectID()
 	qids := make([]int, 0)
 	for _, q := range data {
 		var answer dao.Answer

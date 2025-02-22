@@ -49,6 +49,8 @@ var (
 	SurveyTypeError       = NewError(200527, log.LevelInfo, "问卷类型错误")
 	OauthTimeError        = NewError(200528, log.LevelInfo, "统一登录在夜晚不可用，请在白天尝试")
 	StatusRepeatError     = NewError(200529, log.LevelInfo, "问卷状态重复，请重新选择")
+	AnswerSheetNotExist   = NewError(200530, log.LevelInfo, "答卷不存在")
+	TranslateError        = NewError(200531, log.LevelInfo, "转换失败")
 	NotFound              = NewError(200404, log.LevelInfo, http.StatusText(http.StatusNotFound))
 )
 

@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"QA-System/internal/model"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
@@ -33,6 +34,8 @@ type Daos interface {
 	GetAnswerSheetBySurveyID(ctx context.Context, surveyID int, pageNum int, pageSize int) (
 		[]AnswerSheet, *int64, error)
 	DeleteAnswerSheetBySurveyID(ctx context.Context, surveyID int) error
+	DeleteAnswerSheetByAnswerID(ctx context.Context, AnswerID primitive.ObjectID) error
+	GetAnswerSheetByAnswerID(ctx context.Context, AnswerID primitive.ObjectID) (AnswerSheet, error)
 
 	CreateManage(ctx context.Context, id int, surveyID int) error
 	DeleteManage(ctx context.Context, id int, surveyID int) error
