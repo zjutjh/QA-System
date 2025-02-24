@@ -17,7 +17,6 @@ import (
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
-	"github.com/nfnt/resize"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 )
@@ -186,9 +185,6 @@ func convertAndCompressImage(srcPath, dstPath string) error {
 		return fmt.Errorf("failed to decode image: %w", err)
 	}
 
-	// 调整图像大小（根据需要进行调整）
-	resizedImg := resize.Resize(300, 0, srcImg, resize.Lanczos3)
-
 	// 创建新的JPG文件
 	dstFile, err := safeCreateFile(dstPath)
 	if err != nil {
@@ -196,7 +192,7 @@ func convertAndCompressImage(srcPath, dstPath string) error {
 	}
 
 	// 以JPG格式保存调整大小的图像，并设置压缩质量为90
-	err = jpeg.Encode(dstFile, resizedImg, &jpeg.Options{Quality: 90})
+	err = jpeg.Encode(dstFile, srcImg, &jpeg.Options{Quality: 100})
 	if err != nil {
 		return err
 	}

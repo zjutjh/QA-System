@@ -439,9 +439,14 @@ func GetSurveyAnswers(c *gin.Context) {
 	var num *int64
 	answers, num, err := service.GetSurveyAnswers(data.ID, data.PageNum, data.PageSize, data.Text, data.Unique)
 	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
+		if err.Error() == "页数超出范围" {
+			code.AbortWithException(c, code.PageBeyondError, err)
+		} else {
+			code.AbortWithException(c, code.ServerError, err)
+		}
 		return
 	}
+
 	utils.JsonSuccessResponse(c, gin.H{
 		"answers_data":   answers,
 		"total_page_num": math.Ceil(float64(*num) / float64(data.PageSize)),
@@ -921,7 +926,7 @@ func DeleteAnswerSheet(c *gin.Context) {
 	// 将 AnswerID 转换为 ObjectID
 	objectID, err := primitive.ObjectIDFromHex(data.AnswerID)
 	if err != nil {
-		code.AbortWithException(c, code.TranslateError, err)
+		code.AbortWithException(c, code.ServerError, err)
 	}
 	// 获取问卷
 	err = service.GetAnswerSheetByAnswerID(objectID)

@@ -149,6 +149,11 @@ func (d *Dao) GetAnswerSheetBySurveyID(
 		return nil, nil, err
 	}
 
+	// 查询分页超过总页数
+	if total == 0 || (pageSize != 0 && int64(pageNum) > total/int64(pageSize)+1) {
+		return nil, nil, errors.New("页数超出范围")
+	}
+
 	// 设置分页查询选项
 	opts := options.Find()
 	if pageNum != 0 && pageSize != 0 {

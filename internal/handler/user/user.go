@@ -104,9 +104,8 @@ func SubmitSurvey(c *gin.Context) {
 		if err != nil && !errors.Is(err, redis.Nil) {
 			code.AbortWithException(c, code.ServerError, err)
 			return
-		} else if errors.Is(err, redis.Nil) {
-			flag = true
 		}
+		flag = errors.Is(err, redis.Nil)
 		if err == nil && limit >= int(survey.DailyLimit) {
 			code.AbortWithException(c, code.VoteLimitError, errors.New("投票次数已达上限"))
 			return
@@ -252,7 +251,13 @@ func GetSurvey(c *gin.Context) {
 func UploadImg(c *gin.Context) {
 	url, err := service.HandleImgUpload(c)
 	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
+		if err.Error() == "图片大小超出限制" {
+			code.AbortWithException(c, code.PictureSizeError, err)
+		} else if err.Error() == "仅允许上传图片文件" {
+			code.AbortWithException(c, code.PictureError, err)
+		} else {
+			code.AbortWithException(c, code.ServerError, err)
+		}
 		return
 	}
 	utils.JsonSuccessResponse(c, url)
