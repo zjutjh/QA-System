@@ -13,6 +13,7 @@ import (
 	"QA-System/internal/model"
 	"QA-System/internal/pkg/utils"
 	"github.com/xuri/excelize/v2"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 // GetAdminByUsername 根据用户名获取管理员
@@ -245,6 +246,7 @@ func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.
 	var answerSheets []dao.AnswerSheet
 	data := make([]dao.QuestionAnswers, 0)
 	times := make([]string, 0)
+	aids := make([]primitive.ObjectID, 0)
 	var total *int64
 	// 获取问题
 	questions, err := d.GetQuestionsBySurveyID(ctx, id)
@@ -267,6 +269,7 @@ func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.
 	// 填充data
 	for _, answerSheet := range answerSheets {
 		times = append(times, answerSheet.Time)
+		aids = append(aids, answerSheet.AnswerID)
 		for _, answer := range answerSheet.Answers {
 			question, err := d.GetQuestionByID(ctx, answer.QuestionID)
 			if err != nil {
@@ -279,7 +282,7 @@ func GetSurveyAnswers(id int, num int, size int, text string, unique bool) (dao.
 			}
 		}
 	}
-	return dao.AnswersResonse{QuestionAnswers: data, Time: times}, total, nil
+	return dao.AnswersResonse{QuestionAnswers: data, AnswerIDs: aids, Time: times}, total, nil
 }
 
 // GetSurveyByUserID 获取用户的所有问卷
@@ -665,4 +668,16 @@ func GetQuestionPre(name string) ([]string, error) {
 // DeleteOauthRecord 删除统一记录
 func DeleteOauthRecord(sid int) error {
 	return d.DeleteRecordSheets(ctx, sid)
+}
+
+// DeleteAnswerSheetByAnswerID 根据问卷ID删除问卷
+func DeleteAnswerSheetByAnswerID(answerID primitive.ObjectID) error {
+	err := d.DeleteAnswerSheetByAnswerID(ctx, answerID)
+	return err
+}
+
+// GetAnswerSheetByAnswerID 根据答卷ID删除答卷
+func GetAnswerSheetByAnswerID(answerID primitive.ObjectID) error {
+	err := d.GetAnswerSheetByAnswerID(ctx, answerID)
+	return err
 }

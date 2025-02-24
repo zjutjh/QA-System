@@ -6,6 +6,7 @@ import (
 
 	database "QA-System/internal/pkg/database/mongodb"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.uber.org/zap"
@@ -21,10 +22,11 @@ type Answer struct {
 
 // AnswerSheet mongodb答卷表模型
 type AnswerSheet struct {
-	SurveyID int      `json:"survey_id" bson:"surveyid"` // 问卷ID
-	Time     string   `json:"time" bson:"time"`          // 答卷时间
-	Unique   bool     `json:"unique" bson:"unique"`      // 是否唯一
-	Answers  []Answer `json:"answers" bson:"answers"`    // 答案列表
+	SurveyID int                `json:"survey_id" bson:"surveyid"` // 问卷ID
+	AnswerID primitive.ObjectID `json:"answer_id" bson:"_id"`      // 答卷ID
+	Time     string             `json:"time" bson:"time"`          // 答卷时间
+	Unique   bool               `json:"unique" bson:"unique"`      // 是否唯一
+	Answers  []Answer           `json:"answers" bson:"answers"`    // 答案列表
 }
 
 // QuestionAnswers 问题答案模型
@@ -36,8 +38,9 @@ type QuestionAnswers struct {
 
 // AnswersResonse 答案响应模型
 type AnswersResonse struct {
-	QuestionAnswers []QuestionAnswers `json:"question_answers"`
-	Time            []string          `json:"time"`
+	QuestionAnswers []QuestionAnswers    `json:"question_answers"`
+	AnswerIDs       []primitive.ObjectID `json:"answer_ids"`
+	Time            []string             `json:"time"`
 }
 
 // SaveAnswerSheet 将答卷直接保存到 MongoDB 集合中
@@ -186,5 +189,21 @@ func (d *Dao) DeleteAnswerSheetBySurveyID(ctx context.Context, surveyID int) err
 	filter := bson.M{"surveyid": surveyID}
 	// 删除所有满足条件的文档
 	_, err := d.mongo.Collection(database.QA).DeleteMany(ctx, filter)
+	return err
+}
+
+// DeleteAnswerSheetByAnswerID 根据答卷ID删除答卷
+func (d *Dao) DeleteAnswerSheetByAnswerID(ctx context.Context, answerID primitive.ObjectID) error {
+	filter := bson.M{"_id": answerID}
+	// 删除对应答卷
+	_, err := d.mongo.Collection(database.QA).DeleteOne(ctx, filter)
+	return err
+}
+
+// GetAnswerSheetByAnswerID 根据答卷ID获取答卷
+func (d *Dao) GetAnswerSheetByAnswerID(ctx context.Context, answerID primitive.ObjectID) error {
+	var answerSheet AnswerSheet
+	filter := bson.M{"_id": answerID}
+	err := d.mongo.Collection(database.QA).FindOne(ctx, filter).Decode(&answerSheet)
 	return err
 }

@@ -36,6 +36,7 @@ func Init(r *gin.Engine) {
 			admin.GET("/list/answers", a.GetSurveyAnswers)
 			admin.GET("/statics/answers", a.GetSurveyStatistics)
 			admin.DELETE("/delete", a.DeleteSurvey)
+			admin.DELETE("/delete/answersheet", a.DeleteAnswerSheet)
 
 			admin.POST("/permission/create", a.CreatePermission)
 			admin.DELETE("/permission/delete", a.DeletePermission)
