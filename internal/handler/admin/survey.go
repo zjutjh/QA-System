@@ -281,14 +281,16 @@ func UpdateSurvey(c *gin.Context) {
 		return
 	}
 	// 判断问卷状态
-	if survey.Status != 1 {
-		code.AbortWithException(c, code.StatusOpenError, errors.New("问卷状态不为未发布"))
-		return
-	}
-	// 判断问卷的填写数量是否为零
-	if survey.Num != 0 {
-		code.AbortWithException(c, code.SurveyNumError, errors.New("问卷已有填写数量"))
-		return
+	if user.AdminType != 2 {
+		if survey.Status != 1 {
+			code.AbortWithException(c, code.StatusOpenError, errors.New("问卷状态不为未发布"))
+			return
+		}
+		// 判断问卷的填写数量是否为零
+		if survey.Num != 0 {
+			code.AbortWithException(c, code.SurveyNumError, errors.New("问卷已有填写数量"))
+			return
+		}
 	}
 	// 解析时间转换为中国时间(UTC+8)
 	ddlTime, err := time.Parse(time.RFC3339, data.BaseConfig.EndTime)
