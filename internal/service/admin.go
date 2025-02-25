@@ -291,17 +291,19 @@ func GetSurveyByUserID(userId int) ([]model.Survey, error) {
 }
 
 // ProcessResponse 处理响应
-func ProcessResponse(response []map[string]any, pageNum, pageSize int, title string) ([]map[string]any, *int64) {
-	filteredResponse := make([]map[string]any, 0)
+func ProcessResponse(response []model.SurveyResp, pageNum, pageSize int, title string) ([]model.SurveyResp, int) {
+	resp := response
 	if title != "" {
+		filteredResponse := make([]model.SurveyResp, 0)
 		for _, item := range response {
-			if strings.Contains(strings.ToLower(item["title"].(string)), strings.ToLower(title)) { //nolint
+			if strings.Contains(strings.ToLower(item.Title), strings.ToLower(title)) {
 				filteredResponse = append(filteredResponse, item)
 			}
 		}
+		resp = filteredResponse
 	}
 
-	num := int64(len(filteredResponse))
+	num := len(resp)
 	if pageNum < 1 {
 		pageNum = 1
 	}
@@ -310,15 +312,15 @@ func ProcessResponse(response []map[string]any, pageNum, pageSize int, title str
 	}
 	startIdx := (pageNum - 1) * pageSize
 	endIdx := startIdx + pageSize
-	if startIdx > len(filteredResponse) {
-		return []map[string]any{}, &num // 如果起始索引超出范围，返回空数据
+	if startIdx > len(resp) {
+		return []model.SurveyResp{}, num // 如果起始索引超出范围，返回空数据
 	}
-	if endIdx > len(filteredResponse) {
-		endIdx = len(filteredResponse)
+	if endIdx > len(resp) {
+		endIdx = len(resp)
 	}
-	pagedResponse := filteredResponse[startIdx:endIdx]
+	pagedResponse := resp[startIdx:endIdx]
 
-	return pagedResponse, &num
+	return pagedResponse, num
 }
 
 // GetAllSurvey 获取所有问卷
@@ -354,15 +356,15 @@ func SortSurvey(originalSurveys []model.Survey) []model.Survey {
 }
 
 // GetSurveyResponse 获取问卷响应
-func GetSurveyResponse(surveys []model.Survey) []map[string]any {
-	response := make([]map[string]any, 0)
+func GetSurveyResponse(surveys []model.Survey) []model.SurveyResp {
+	response := make([]model.SurveyResp, 0)
 	for _, survey := range surveys {
-		surveyResponse := map[string]any{
-			"id":          survey.ID,
-			"title":       survey.Title,
-			"status":      survey.Status,
-			"survey_type": survey.Type,
-			"num":         survey.Num,
+		surveyResponse := model.SurveyResp{
+			ID:         survey.ID,
+			Title:      survey.Title,
+			Status:     survey.Status,
+			SurveyType: survey.Type,
+			Num:        survey.Num,
 		}
 		response = append(response, surveyResponse)
 	}

@@ -506,7 +506,7 @@ func GetAllSurvey(c *gin.Context) {
 
 	utils.JsonSuccessResponse(c, gin.H{
 		"survey_list":    response,
-		"total_page_num": math.Ceil(float64(*totalPageNum) / float64(data.PageSize)),
+		"total_page_num": math.Ceil(float64(totalPageNum) / float64(data.PageSize)),
 	})
 }
 
