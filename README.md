@@ -44,39 +44,62 @@ QA-System/
 ```
 
 ### 如何运行
-1. 克隆该项目
+
+#### 1. 克隆该项目
+
 ```sh
 git clone https://github.com/zjutjh/QA-System
 ```
-2. 更改配置文件
-```sh
-mv conf/config.yaml.example conf/config.yaml
+
+#### 2. 填写配置文件
+
+```shell
+## Windows
+copy conf/config.yaml.example conf/config.yaml
+
+## Linux
+cp conf/config.yaml.example conf/config.yaml
 ```
-3. 由于文件是本地存放,因此要创建文件存放的目录并给予权限
-```sh
+
+#### 3. 创建目录并给予权限
+
+```shell
+## Linux
 mkdir public
 chmod -R 755 ./public
 ```
-4. 
+
+#### 4. 编译并运行
+
 * 本地运行后端程序
+
 ```sh
 go run main.go
 ```
+
 * 打包成可执行文件
+
 ```sh
-#### Windows(cmd)
+## Windows(cmd)
 SET CGO_ENABLE=0
 SET GOOS=linux
 SET GOARCH=amd64
-make build-linux ### 或go build -o QA main.go
+go build -o QA main.go
 
-#### linux
+## Linux
 make build
 ```
-5. 测试代码
-第一次先安装[golangci-lint](https://github.com/golangci/golangci-lint/releases)
 
-由于部分功能要求使用diff，因此windows环境下推荐到git bash下执行。
-``` bash
-golangci-lint run
+#### 5. 格式化代码并检查规范
+
+先安装 [gci](https://github.com/daixiang0/gci?tab=readme-ov-file#installation) 和 [golangci-lint](https://golangci-lint.run/welcome/install)
+
+```shell
+## Windows(cmd)
+gofmt -w .
+gci write . -s standard -s default
+golangci-lint run --config .golangci.yml
+
+## Linux
+make fmt
 ```
