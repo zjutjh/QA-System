@@ -344,7 +344,7 @@ func UpdateSurvey(c *gin.Context) {
 		}
 	}
 	// 修改问卷
-	err = service.UpdateSurvey(data.ID, data.QuestionConfig.QuestionList, data.SurveyType, data.BaseConfig.DailyLimit,
+	err = service.UpdateSurvey(data.UUID, data.QuestionConfig.QuestionList, data.SurveyType, data.BaseConfig.DailyLimit,
 		data.BaseConfig.Verify, data.QuestionConfig.Desc, data.QuestionConfig.Title, ddlTime, startTime)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)

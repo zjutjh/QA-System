@@ -98,7 +98,7 @@ func CreateSurvey(id int, question_list []dao.QuestionList, status int, surveyTy
 	survey.StartTime = startTime
 	survey.Title = title
 	survey.Desc = desc
-	survey, err := d.CreateSurvey(ctx, survey)
+	survey, err = d.CreateSurvey(ctx, survey)
 	if err != nil {
 		return err
 	}
@@ -113,7 +113,7 @@ func UpdateSurveyStatus(sid string, status int) error {
 }
 
 // UpdateSurvey 更新问卷
-func UpdateSurvey(id int, question_list []dao.QuestionList, surveyType,
+func UpdateSurvey(sid string, question_list []dao.QuestionList, surveyType,
 	limit uint, verify bool, desc string, title string, ddl, startTime time.Time) error {
 	// 遍历原有问题，删除对应选项
 	var oldQuestions []model.Question
@@ -160,7 +160,7 @@ func UpdateSurvey(id int, question_list []dao.QuestionList, surveyType,
 	}
 	new_imgs = append(new_imgs, question_list[1].Img)
 	// 重新添加问题和选项
-	imgs, err := createQuestionsAndOptions(question_list, id)
+	imgs, err := createQuestionsAndOptions(question_list, sid)
 	if err != nil {
 		return err
 	}
