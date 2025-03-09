@@ -138,8 +138,8 @@ func CreateSurvey(c *gin.Context) {
 		}
 	}
 	// 创建问卷
-	err = service.CreateSurvey(user.ID, data.QuestionConfig.QuestionList, data.Status, data.
-		SurveyType, data.BaseConfig.DailyLimit, data.BaseConfig.Verify, ddlTime, startTime)
+	err = service.CreateSurvey(user.ID, data.QuestionConfig.QuestionList, data.Status, data.SurveyType, data.BaseConfig.
+		DailyLimit, data.BaseConfig.Verify, ddlTime, startTime, data.QuestionConfig.Title, data.QuestionConfig.Desc)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -344,8 +344,8 @@ func UpdateSurvey(c *gin.Context) {
 		}
 	}
 	// 修改问卷
-	err = service.UpdateSurvey(data.UUID, data.QuestionConfig, data.SurveyType, data.BaseConfig.DailyLimit, data.
-		BaseConfig.Verify, data.QuestionConfig.Desc, data.QuestionConfig.Title, ddlTime, startTime)
+	err = service.UpdateSurvey(data.ID, data.QuestionConfig.QuestionList, data.SurveyType, data.BaseConfig.DailyLimit,
+		data.BaseConfig.Verify, data.QuestionConfig.Desc, data.QuestionConfig.Title, ddlTime, startTime)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
