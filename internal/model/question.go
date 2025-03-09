@@ -3,7 +3,7 @@ package model
 // Question 问题模型
 type Question struct {
 	ID            int    `json:"id"`
-	SurveyID      int    `json:"survey_id"`      // 问卷ID
+	SurveyID      string `json:"survey_id"`      // 问卷UUID
 	SerialNum     int    `json:"serial_num"`     // 题目序号
 	Img           string `json:"img"`            // 图片
 	Subject       string `json:"subject"`        // 题目

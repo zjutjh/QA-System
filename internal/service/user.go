@@ -21,14 +21,14 @@ import (
 	"go.uber.org/zap"
 )
 
-// GetSurveyByID 根据ID获取问卷
-func GetSurveyByID(id int) (*model.Survey, error) {
-	survey, err := d.GetSurveyByID(ctx, id)
+// GetSurveyByUUID 根据UUID获取问卷
+func GetSurveyByUUID(sid string) (*model.Survey, error) {
+	survey, err := d.GetSurveyByUUID(ctx, sid)
 	return survey, err
 }
 
-// GetQuestionsBySurveyID 根据问卷ID获取问题
-func GetQuestionsBySurveyID(sid int) ([]model.Question, error) {
+// GetQuestionsBySurveyID 根据问卷UUID获取问题
+func GetQuestionsBySurveyID(sid string) ([]model.Question, error) {
 	var questions []model.Question
 	questions, err := d.GetQuestionsBySurveyID(ctx, sid)
 	return questions, err
@@ -49,7 +49,7 @@ func GetQuestionByID(id int) (*model.Question, error) {
 }
 
 // SubmitSurvey 提交问卷
-func SubmitSurvey(sid int, data []dao.QuestionsList, t string) error {
+func SubmitSurvey(sid string, data []dao.QuestionsList, t string) error {
 	var answerSheet dao.AnswerSheet
 	answerSheet.SurveyID = sid
 	answerSheet.Time = t
@@ -249,7 +249,7 @@ func HandleFileUpload(c *gin.Context) (string, error) {
 }
 
 // CreateOauthRecord 创建一条统一验证记录
-func CreateOauthRecord(stuId string, t time.Time, sid int) error {
+func CreateOauthRecord(stuId string, t time.Time, sid string) error {
 	return d.SaveRecordSheet(ctx, dao.RecordSheet{StudentID: stuId, Time: t}, sid)
 }
 

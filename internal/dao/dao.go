@@ -49,7 +49,7 @@ type Daos interface {
 	DeleteOption(ctx context.Context, optionID int) error
 
 	CreateQuestion(ctx context.Context, question *model.Question) error
-	GetQuestionsBySurveyID(ctx context.Context, surveyID int) ([]model.Question, error)
+	GetQuestionsBySurveyID(ctx context.Context, surveyID string) ([]model.Question, error)
 	GetQuestionByID(ctx context.Context, questionID int) (*model.Question, error)
 	DeleteQuestion(ctx context.Context, questionID int) error
 	DeleteQuestionBySurveyID(ctx context.Context, surveyID int) error
