@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"image/jpeg"
+	"image/png"
 	"io"
 	"mime/multipart"
 	"os"
@@ -88,12 +89,13 @@ func HandleImgUpload(c *gin.Context) (string, error) {
 	if !isImageFile(file) {
 		return "", errors.New("文件类型不是图片")
 	}
+
 	// 检查文件大小是否超出限制
 	if file.Size > 10<<20 {
 		return "", errors.New("文件大小超出限制")
 	}
 	// 创建临时目录
-	tempDir, err := os.MkdirTemp("", "tempdir")
+	tempDir, err := os.MkdirTemp("", "temp")
 	if err != nil {
 		return "", errors.New("创建临时目录失败: " + err.Error())
 	}
@@ -108,6 +110,12 @@ func HandleImgUpload(c *gin.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			zap.L().Error("关闭文件失败", zap.Error(err))
+		}
+	}(f)
 	// 将上传的文件保存到临时文件中
 	src, err := file.Open()
 	if err != nil {
@@ -173,30 +181,68 @@ func isImageFile(file *multipart.FileHeader) bool {
 
 // 用于转换和压缩图像的函数
 func convertAndCompressImage(srcPath, dstPath string) error {
-	// 打开源图像文件
-	srcFile, err := safeOpenFile(srcPath)
+	srcFile, err := safeOpenFile(srcPath) // 只打开文件 *一次*
 	if err != nil {
 		return err
 	}
+	defer func(srcFile *os.File) { // 只在函数结束时关闭文件 *一次*
+		err := srcFile.Close()
+		if err != nil {
+			zap.L().Error("关闭文件失败", zap.Error(err))
+		}
+	}(srcFile)
 
-	// 解码图像
-	srcImg, _, err := image.Decode(srcFile)
-	if err != nil {
-		return fmt.Errorf("failed to decode image: %w", err)
+	// 尝试解码为 JPEG
+	img, err := jpeg.Decode(srcFile)
+	if err == nil {
+		// 成功解码为 JPEG！
+		return compressAsJPEG(img, dstPath, 100) // 使用 JPEG 压缩
 	}
 
-	// 创建新的JPG文件
-	dstFile, err := safeCreateFile(dstPath)
+	// 重置文件指针到文件开头
+	_, err = srcFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("无法将文件指针重置到开头: %w", err)
+	}
+
+	// 尝试解码为 PNG
+	img, err = png.Decode(srcFile)
+	if err == nil {
+		// 成功解码为 PNG！
+		return compressAsJPEG(img, dstPath, 100) // 使用 JPEG 压缩
+	}
+
+	// 重置文件指针到文件开头
+	_, err = srcFile.Seek(0, io.SeekStart)
+	if err != nil {
+		return fmt.Errorf("无法将文件指针重置到开头: %w", err)
+	}
+
+	// 使用通用的 image.Decode 尝试解码（作为最后的手段）
+	img, _, err = image.Decode(srcFile)
+	if err != nil {
+		return fmt.Errorf("解码图片失败: %w", err)
+	}
+	return compressAsJPEG(img, dstPath, 100)
+}
+
+// 使用 JPEG 压缩图像
+func compressAsJPEG(img image.Image, dstPath string, quality int) error {
+	f, err := safeCreateFile(dstPath) // 安全地创建目标文件
 	if err != nil {
 		return err
 	}
+	defer func(f *os.File) { // 确保文件被关闭
+		err := f.Close()
+		if err != nil {
+			zap.L().Error("关闭文件失败", zap.Error(err))
+		}
+	}(f)
 
-	// 以JPG格式保存调整大小的图像，并设置压缩质量为90
-	err = jpeg.Encode(dstFile, srcImg, &jpeg.Options{Quality: 100})
+	err = jpeg.Encode(f, img, &jpeg.Options{Quality: quality}) // 使用 JPEG 编码
 	if err != nil {
 		return err
 	}
-
 	return nil
 }
 
@@ -212,12 +258,18 @@ func copyFile(src, dst string) error {
 		}
 	}(srcFile)
 
-	dstFile, err := safeCreateFile(dst)
+	f, err := safeCreateFile(dst)
 	if err != nil {
 		return err
 	}
+	defer func(f *os.File) {
+		err := f.Close()
+		if err != nil {
+			zap.L().Error("关闭文件失败", zap.Error(err))
+		}
+	}(f)
 
-	_, err = io.Copy(dstFile, srcFile)
+	_, err = io.Copy(f, srcFile)
 	if err != nil {
 		return err
 	}
@@ -257,21 +309,10 @@ func safeCreateFile(tempFile string) (*os.File, error) {
 	// 清理路径中的 ".."
 	cleanedPath := filepath.Clean(tempFile)
 
-	// 确保路径没有非法部分
-	if strings.Contains(cleanedPath, "..") {
-		return nil, fmt.Errorf("invalid file path: %s", cleanedPath)
-	}
-
 	f, err := os.Create(cleanedPath)
 	if err != nil {
 		return nil, err
 	}
-	defer func(f *os.File) {
-		err := f.Close()
-		if err != nil {
-			zap.L().Error("关闭文件失败", zap.Error(err))
-		}
-	}(f)
 
 	// 进一步处理文件
 	return f, nil
@@ -287,25 +328,11 @@ func safeOpenFile(src string) (*os.File, error) {
 	// 清理路径，避免路径穿越
 	cleanedPath := filepath.Clean(absPath)
 
-	// 指定安全目录前缀
-	safeDir := "/public/static/"
-
-	// 使用 strings.HasPrefix 检查路径是否以安全目录前缀开始
-	if !strings.HasPrefix(cleanedPath, safeDir) {
-		return nil, fmt.Errorf("unsafe file path: %s", cleanedPath)
-	}
-
 	// 安全地打开文件
 	srcFile, err := os.Open(cleanedPath)
 	if err != nil {
 		return nil, err
 	}
-	defer func(srcFile *os.File) {
-		err := srcFile.Close()
-		if err != nil {
-			zap.L().Error("关闭文件失败", zap.Error(err))
-		}
-	}(srcFile)
 
 	return srcFile, nil
 }

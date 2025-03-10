@@ -117,12 +117,7 @@ func SubmitSurvey(c *gin.Context) {
 		code.AbortWithException(c, code.ServerError, err)
 		return
 	}
-	err = service.InscUserLimit(c, stuId, survey.UUID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-
+  
 	if survey.Verify && survey.DailyLimit != 0 {
 		if flag {
 			err = service.SetUserLimit(c, stuId, survey.UUID, 0)
@@ -346,8 +341,8 @@ func GetSurveyStatistics(c *gin.Context) {
 		return
 	}
 
-	// 如果 answersheets 为空，则返回所有问题和选项统计为 0
-	if len(answersheets) == 0 {
+	// 如果 answerSheets 为空，则返回所有问题和选项统计为 0
+	if len(answerSheets) == 0 {
 		response := make([]getSurveyStatisticsResponse, 0, len(questions))
 		for _, q := range questions {
 			options, err := service.GetOptionsByQuestionID(q.ID)
@@ -387,9 +382,13 @@ func GetSurveyStatistics(c *gin.Context) {
 		return
 	}
 
+	// 问题编号对应的问题
 	questionMap := make(map[int]model.Question)
+	// 问题编号对应的选项们
 	optionsMap := make(map[int][]model.Option)
+	// 问题编号与选项内容对应的选项
 	optionAnswerMap := make(map[int]map[string]model.Option)
+	// 问题编号与选项序号对应的选项
 	optionSerialNumMap := make(map[int]map[int]model.Option)
 	for _, question := range questions {
 		questionMap[question.ID] = question
@@ -407,8 +406,9 @@ func GetSurveyStatistics(c *gin.Context) {
 		}
 	}
 
+	// 问题编号对应的选项编号对应的选项数量
 	optionCounts := make(map[int]map[int]int)
-	for _, sheet := range answersheets {
+	for _, sheet := range answerSheets {
 		for _, answer := range sheet.Answers {
 			options := optionsMap[answer.QuestionID]
 			question := questionMap[answer.QuestionID]
@@ -419,7 +419,7 @@ func GetSurveyStatistics(c *gin.Context) {
 					counts[option.SerialNum] = 0
 				}
 			}
-			if question.QuestionType == 1 || question.QuestionType == 2 {
+			if question.QuestionType == 1 {
 				answerOptions := strings.Split(answer.Content, "┋")
 				questionOptions := optionAnswerMap[answer.QuestionID]
 				for _, answerOption := range answerOptions {
