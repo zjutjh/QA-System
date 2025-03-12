@@ -55,6 +55,12 @@ func CreateSurvey(c *gin.Context) {
 		code.AbortWithException(c, code.SurveyError, errors.New("开始时间晚于截止时间"))
 		return
 	}
+	// 检查总投票次数大于日投票数
+	if data.BaseConfig.SumLimit != 0 && data.BaseConfig.DailyLimit != 0 &&
+		data.BaseConfig.SumLimit <= data.BaseConfig.DailyLimit {
+		code.AbortWithException(c, code.SurveyError, errors.New("总投票次数小于单日投票次数"))
+		return
+	}
 	// 检查问卷每个题目的序号没有重复且按照顺序递增
 	questionNumMap := make(map[int]bool)
 	for i, question := range data.QuestionConfig.QuestionList {
@@ -139,7 +145,8 @@ func CreateSurvey(c *gin.Context) {
 	}
 	// 创建问卷
 	err = service.CreateSurvey(user.ID, data.QuestionConfig.QuestionList, data.Status, data.SurveyType, data.BaseConfig.
-		DailyLimit, data.BaseConfig.Verify, ddlTime, startTime, data.QuestionConfig.Title, data.QuestionConfig.Desc)
+		DailyLimit, data.BaseConfig.SumLimit, data.BaseConfig.Verify, ddlTime, startTime, data.QuestionConfig.Title,
+		data.QuestionConfig.Desc)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -307,6 +314,11 @@ func UpdateSurvey(c *gin.Context) {
 		code.AbortWithException(c, code.SurveyError, errors.New("开始时间晚于截止时间"))
 		return
 	}
+	if data.BaseConfig.SumLimit != 0 && data.BaseConfig.DailyLimit != 0 &&
+		data.BaseConfig.SumLimit <= data.BaseConfig.DailyLimit {
+		code.AbortWithException(c, code.SurveyError, errors.New("总投票次数小于单日投票次数"))
+		return
+	}
 	// 检查问卷每个题目的序号没有重复且按照顺序递增
 	questionNumMap := make(map[int]bool)
 	for i, question := range data.QuestionConfig.QuestionList {
@@ -345,7 +357,8 @@ func UpdateSurvey(c *gin.Context) {
 	}
 	// 修改问卷
 	err = service.UpdateSurvey(data.ID, data.QuestionConfig.QuestionList, data.SurveyType, data.BaseConfig.DailyLimit,
-		data.BaseConfig.Verify, data.QuestionConfig.Desc, data.QuestionConfig.Title, ddlTime, startTime)
+		data.BaseConfig.SumLimit, data.BaseConfig.Verify, data.QuestionConfig.Desc, data.QuestionConfig.Title, ddlTime,
+		startTime)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -598,6 +611,7 @@ func GetSurvey(c *gin.Context) {
 		"start_time": survey.StartTime,
 		"end_time":   survey.Deadline,
 		"day_limit":  survey.DailyLimit,
+		"sum_limit":  survey.SumLimit,
 		"verify":     survey.Verify,
 	}
 	response := map[string]any{
