@@ -9,10 +9,10 @@ import (
 )
 
 // GetUserLimit 获取用户的对该问卷的访问次数
-func GetUserLimit(c context.Context, stu_id string, sid int) (int, error) {
+func GetUserLimit(c context.Context, stu_id string, sid int) (uint, error) {
 	// 从 redis 中获取用户的对该问卷的访问次数
 	item := "survey:" + strconv.Itoa(sid) + ":stu_id:" + stu_id
-	var limit int
+	var limit uint
 	err := redis.RedisClient.Get(c, item).Scan(&limit)
 	return limit, err
 }
