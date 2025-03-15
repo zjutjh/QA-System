@@ -64,7 +64,7 @@ func (d *Dao) GetOptionByQIDAndAnswer(ctx context.Context, qid int, answer strin
 	cachedData, err := redis.RedisClient.Get(ctx, fmt.Sprintf("option:qid:%d:answer:%s", qid, answer)).Result()
 	if err == nil && cachedData != "" {
 		// 反序列化 JSON 为结构体
-		if err := json.Unmarshal([]byte(cachedData), option); err == nil {
+		if err := json.Unmarshal([]byte(cachedData), &option); err == nil {
 			return &option, nil
 		}
 	}
@@ -85,10 +85,10 @@ func (d *Dao) GetOptionByQIDAndAnswer(ctx context.Context, qid int, answer strin
 func (d *Dao) GetOptionByQIDAndSerialNum(ctx context.Context, qid int, serialNum int) (*model.Option, error) {
 	var option model.Option
 	// 从 Redis 获取
-	cachedData, err := redis.RedisClient.Get(ctx, fmt.Sprintf("option:qid:%d:serial_num:%s", qid, serialNum)).Result()
+	cachedData, err := redis.RedisClient.Get(ctx, fmt.Sprintf("option:qid:%d:serial_num:%d", qid, serialNum)).Result()
 	if err == nil && cachedData != "" {
 		// 反序列化 JSON 为结构体
-		if err := json.Unmarshal([]byte(cachedData), option); err == nil {
+		if err := json.Unmarshal([]byte(cachedData), &option); err == nil {
 			return &option, nil
 		}
 	}
@@ -100,7 +100,7 @@ func (d *Dao) GetOptionByQIDAndSerialNum(ctx context.Context, qid int, serialNum
 	// 序列化为 JSON 后存储到 Redis
 	jsonData, err := json.Marshal(option)
 	if err == nil {
-		redis.RedisClient.Set(ctx, fmt.Sprintf("option:qid:%d:serial_num:%s", qid, serialNum), jsonData, 20*time.Minute)
+		redis.RedisClient.Set(ctx, fmt.Sprintf("option:qid:%d:serial_num:%d", qid, serialNum), jsonData, 20*time.Minute)
 	}
 	return &option, err
 }

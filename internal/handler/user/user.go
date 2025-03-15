@@ -17,7 +17,7 @@ import (
 )
 
 type submitSurveyData struct {
-	ID            int                 `json:"id" binding:"required"`
+	UUID          string              `json:"uuid" binding:"required"`
 	Token         string              `json:"token"`
 	QuestionsList []dao.QuestionsList `json:"questions_list"`
 }
@@ -31,7 +31,7 @@ func SubmitSurvey(c *gin.Context) {
 		return
 	}
 	// 判断问卷问题和答卷问题数目是否一致
-	survey, err := service.GetSurveyByID(data.ID)
+	survey, err := service.GetSurveyByUUID(data.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -44,7 +44,7 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 	}
-	questions, err := service.GetQuestionsBySurveyID(survey.ID)
+	questions, err := service.GetQuestionsBySurveyID(survey.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -74,7 +74,7 @@ func SubmitSurvey(c *gin.Context) {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
-		if question.SurveyID != survey.ID {
+		if question.SurveyID != survey.UUID {
 			code.AbortWithException(c, code.ServerError,
 				errors.New("问题"+strconv.Itoa(question.SerialNum)+"不属于该问卷"))
 			return
@@ -100,7 +100,7 @@ func SubmitSurvey(c *gin.Context) {
 	}
 	flag := false
 	if survey.DailyLimit != 0 && survey.Verify {
-		limit, err := service.GetUserLimit(c, stuId, survey.ID)
+		limit, err := service.GetUserLimit(c, stuId, survey.UUID)
 		if err != nil && !errors.Is(err, redis.Nil) {
 			code.AbortWithException(c, code.ServerError, err)
 			return
@@ -112,7 +112,7 @@ func SubmitSurvey(c *gin.Context) {
 		}
 	}
 
-	err = service.SubmitSurvey(data.ID, data.QuestionsList, time.Now().Format("2006-01-02 15:04:05"))
+	err = service.SubmitSurvey(data.UUID, data.QuestionsList, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -120,19 +120,19 @@ func SubmitSurvey(c *gin.Context) {
 
 	if survey.Verify && survey.DailyLimit != 0 {
 		if flag {
-			err = service.SetUserLimit(c, stuId, survey.ID, 0)
+			err = service.SetUserLimit(c, stuId, survey.UUID, 0)
 			if err != nil {
 				code.AbortWithException(c, code.ServerError, err)
 				return
 			}
 		}
-		err = service.InscUserLimit(c, stuId, survey.ID)
+		err = service.InscUserLimit(c, stuId, survey.UUID)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
 	} else if survey.Verify {
-		err = service.CreateOauthRecord(stuId, time.Now(), data.ID)
+		err = service.CreateOauthRecord(stuId, time.Now(), data.UUID)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
@@ -142,7 +142,7 @@ func SubmitSurvey(c *gin.Context) {
 }
 
 type getSurveyData struct {
-	ID int `form:"id" binding:"required"`
+	UUID string `form:"uuid" binding:"required"`
 }
 
 // GetSurvey 用户获取问卷
@@ -154,7 +154,7 @@ func GetSurvey(c *gin.Context) {
 		return
 	}
 	// 获取问卷
-	survey, err := service.GetSurveyByID(data.ID)
+	survey, err := service.GetSurveyByUUID(data.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -174,7 +174,7 @@ func GetSurvey(c *gin.Context) {
 		return
 	}
 	// 获取相应的问题
-	questions, err := service.GetQuestionsBySurveyID(survey.ID)
+	questions, err := service.GetQuestionsBySurveyID(survey.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -232,7 +232,7 @@ func GetSurvey(c *gin.Context) {
 		"verify":     survey.Verify,
 	}
 	response := map[string]any{
-		"id":          survey.ID,
+		"uuid":        survey.UUID,
 		"status":      survey.Status,
 		"survey_type": survey.Type,
 		"base_config": baseConfigResponse,
@@ -320,7 +320,7 @@ func GetSurveyStatistics(c *gin.Context) {
 		code.AbortWithException(c, code.ParamError, err)
 		return
 	}
-	survey, err := service.GetSurveyByID(data.ID)
+	survey, err := service.GetSurveyByUUID(data.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -329,13 +329,13 @@ func GetSurveyStatistics(c *gin.Context) {
 		code.AbortWithException(c, code.SurveyTypeError, errors.New("问卷为调研问卷"))
 		return
 	}
-	answerSheets, err := service.GetSurveyAnswersBySurveyID(data.ID)
+	answerSheets, err := service.GetSurveyAnswersBySurveyID(data.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
 	}
 
-	questions, err := service.GetQuestionsBySurveyID(data.ID)
+	questions, err := service.GetQuestionsBySurveyID(data.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return

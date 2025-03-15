@@ -15,13 +15,13 @@ type RecordSheet struct {
 }
 
 // SaveRecordSheet 将记录直接保存到 MongoDB 集合中
-func (d *Dao) SaveRecordSheet(ctx context.Context, answerSheet RecordSheet, sid int) error {
+func (d *Dao) SaveRecordSheet(ctx context.Context, answerSheet RecordSheet, sid string) error {
 	_, err := d.mongo.Collection(database.Record).InsertOne(ctx, bson.M{"survey_id": sid, "record": answerSheet})
 	return err
 }
 
 // DeleteRecordSheets 删除记录表
-func (d *Dao) DeleteRecordSheets(ctx context.Context, surveyID int) error {
+func (d *Dao) DeleteRecordSheets(ctx context.Context, surveyID string) error {
 	_, err := d.mongo.Collection(database.Record).DeleteMany(ctx, bson.M{"survey_id": surveyID})
 	return err
 }

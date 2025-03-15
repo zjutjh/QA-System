@@ -10,7 +10,7 @@ mysql:
   pass:
 
 
- session:
+session:
    name: QA-session
    secret: secret
 
