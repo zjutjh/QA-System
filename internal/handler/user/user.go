@@ -117,7 +117,7 @@ func SubmitSurvey(c *gin.Context) {
 		code.AbortWithException(c, code.ServerError, err)
 		return
 	}
-  
+
 	if survey.Verify && survey.DailyLimit != 0 {
 		if flag {
 			err = service.SetUserLimit(c, stuId, survey.UUID, 0)
@@ -329,7 +329,7 @@ func GetSurveyStatistics(c *gin.Context) {
 		code.AbortWithException(c, code.SurveyTypeError, errors.New("问卷为调研问卷"))
 		return
 	}
-	answersheets, err := service.GetSurveyAnswersBySurveyID(data.UUID)
+	answerSheets, err := service.GetSurveyAnswersBySurveyID(data.UUID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
