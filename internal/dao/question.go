@@ -15,6 +15,7 @@ type BaseConfig struct {
 	StartTime  string `json:"start_time"`
 	EndTime    string `json:"end_time"`
 	DailyLimit uint   `json:"day_limit"` // 问卷每日填写限制
+	SumLimit   uint   `json:"sum_limit"` // 问卷总填写次数限制
 	Verify     bool   `json:"verify"`    // 问卷是否需要统一验证
 }
 

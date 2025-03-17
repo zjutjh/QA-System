@@ -336,3 +336,14 @@ func safeOpenFile(src string) (*os.File, error) {
 
 	return srcFile, nil
 }
+
+// UpdateVoteLimit 更新投票限制
+func UpdateVoteLimit(c *gin.Context, stuId string, surveyID int, isNew bool, durationType string) error {
+	if isNew {
+		if durationType == "dailyLimit" {
+			return SetUserLimit(c, stuId, surveyID, 1, durationType)
+		}
+		return SetUserSumLimit(c, stuId, surveyID, 1, durationType)
+	}
+	return InscUserLimit(c, stuId, surveyID, durationType)
+}

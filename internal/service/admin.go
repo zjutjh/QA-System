@@ -79,13 +79,14 @@ func CheckPermission(id int, surveyID int) error {
 
 // CreateSurvey 创建问卷
 func CreateSurvey(id int, question_list []dao.QuestionList, status int, surveyType, limit uint,
-	verify bool, ddl, startTime time.Time, title string, desc string) error {
+	sumLimit uint, verify bool, ddl, startTime time.Time, title string, desc string) error {
 	var survey model.Survey
 	survey.UserID = id
 	survey.Status = status
 	survey.Deadline = ddl
 	survey.Type = surveyType
 	survey.DailyLimit = limit
+	survey.SumLimit = sumLimit
 	survey.Verify = verify
 	survey.StartTime = startTime
 	survey.Title = title
@@ -106,7 +107,7 @@ func UpdateSurveyStatus(id int, status int) error {
 
 // UpdateSurvey 更新问卷
 func UpdateSurvey(id int, question_list []dao.QuestionList, surveyType,
-	limit uint, verify bool, desc string, title string, ddl, startTime time.Time) error {
+	limit uint, sumLimit uint, verify bool, desc string, title string, ddl, startTime time.Time) error {
 	// 遍历原有问题，删除对应选项
 	var oldQuestions []model.Question
 	var old_imgs []string
@@ -146,7 +147,7 @@ func UpdateSurvey(id int, question_list []dao.QuestionList, surveyType,
 		}
 	}
 	// 修改问卷信息
-	err = d.UpdateSurvey(ctx, id, surveyType, limit, verify, desc, title, ddl, startTime)
+	err = d.UpdateSurvey(ctx, id, surveyType, limit, sumLimit, verify, desc, title, ddl, startTime)
 	if err != nil {
 		return err
 	}

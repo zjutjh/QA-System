@@ -13,7 +13,6 @@ import (
 	"QA-System/internal/pkg/utils"
 	"QA-System/internal/service"
 	"github.com/gin-gonic/gin"
-	"github.com/go-redis/redis/v8"
 )
 
 type submitSurveyData struct {
@@ -98,16 +97,27 @@ func SubmitSurvey(c *gin.Context) {
 			}
 		}
 	}
-	flag := false
-	if survey.DailyLimit != 0 && survey.Verify {
-		limit, err := service.GetUserLimit(c, stuId, survey.ID)
-		if err != nil && !errors.Is(err, redis.Nil) {
-			code.AbortWithException(c, code.ServerError, err)
+	flagSum, flagDay := false, false
+
+	if survey.Verify {
+		var err error
+
+		// 统一检查总投票次数和每日投票次数
+		if flagSum, err = service.CheckLimit(c, stuId, survey, "sumLimit", int(survey.SumLimit)); err != nil {
+			if err.Error() == "sumLimit已达上限" {
+				code.AbortWithException(c, code.VoteSumLimitError, errors.New("总投票次数已达上限"))
+			} else {
+				code.AbortWithException(c, code.ServerError, err)
+			}
 			return
 		}
-		flag = errors.Is(err, redis.Nil)
-		if err == nil && limit >= int(survey.DailyLimit) {
-			code.AbortWithException(c, code.VoteLimitError, errors.New("投票次数已达上限"))
+
+		if flagDay, err = service.CheckLimit(c, stuId, survey, "dailyLimit", int(survey.DailyLimit)); err != nil {
+			if err.Error() == "dailyLimit已达上限" {
+				code.AbortWithException(c, code.VoteLimitError, errors.New("单日投票次数已达上限"))
+			} else {
+				code.AbortWithException(c, code.ServerError, err)
+			}
 			return
 		}
 	}
@@ -118,22 +128,23 @@ func SubmitSurvey(c *gin.Context) {
 		return
 	}
 
-	if survey.Verify && survey.DailyLimit != 0 {
-		if flag {
-			err = service.SetUserLimit(c, stuId, survey.ID, 0)
+	if survey.Verify {
+		if survey.DailyLimit > 0 {
+			err := service.UpdateVoteLimit(c, stuId, survey.ID, flagDay, "dailyLimit")
 			if err != nil {
 				code.AbortWithException(c, code.ServerError, err)
 				return
 			}
 		}
-		err = service.InscUserLimit(c, stuId, survey.ID)
-		if err != nil {
-			code.AbortWithException(c, code.ServerError, err)
-			return
+		if survey.SumLimit > 0 {
+			err := service.UpdateVoteLimit(c, stuId, survey.ID, flagSum, "sumLimit")
+			if err != nil {
+				code.AbortWithException(c, code.ServerError, err)
+				return
+			}
 		}
-	} else if survey.Verify {
-		err = service.CreateOauthRecord(stuId, time.Now(), data.ID)
-		if err != nil {
+		// 记录授权
+		if err := service.CreateOauthRecord(stuId, time.Now(), data.ID); err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
@@ -229,6 +240,7 @@ func GetSurvey(c *gin.Context) {
 		"start_time": survey.StartTime,
 		"end_time":   survey.Deadline,
 		"day_limit":  survey.DailyLimit,
+		"sum_limit":  survey.SumLimit,
 		"verify":     survey.Verify,
 	}
 	response := map[string]any{
