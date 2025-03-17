@@ -150,7 +150,7 @@ func (d *Dao) GetAnswerSheetBySurveyID(
 	}
 
 	// 查询分页超过总页数
-	if total == 0 || (pageSize != 0 && int64(pageNum) > total/int64(pageSize)+1) {
+	if pageSize != 0 && int64(pageNum) > total/int64(pageSize)+1 {
 		return nil, nil, errors.New("页数超出范围")
 	}
 
