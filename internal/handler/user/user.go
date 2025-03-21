@@ -106,13 +106,14 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 		flag = errors.Is(err, redis.Nil)
-		if err == nil && limit >= int(survey.DailyLimit) {
+		if err == nil && limit >= survey.DailyLimit {
 			code.AbortWithException(c, code.VoteLimitError, errors.New("投票次数已达上限"))
 			return
 		}
 	}
 
-	err = service.SubmitSurvey(data.ID, data.QuestionsList, time.Now().Format("2006-01-02 15:04:05"))
+	submitTime := time.Now().Format(time.DateTime)
+	err = service.SubmitSurvey(data.ID, data.QuestionsList, submitTime)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
@@ -138,7 +139,9 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 	}
-	utils.JsonSuccessResponse(c, nil)
+	utils.JsonSuccessResponse(c, gin.H{
+		"time": submitTime,
+	})
 }
 
 type getSurveyData struct {
@@ -271,6 +274,7 @@ func UploadFile(c *gin.Context) {
 type oauthData struct {
 	StudentID string `json:"stu_id" binding:"required"`
 	Password  string `json:"password" binding:"required"`
+	ID        int    `json:"id" binding:"required"`
 }
 
 // Oauth 统一验证
@@ -295,7 +299,21 @@ func Oauth(c *gin.Context) {
 		code.AbortWithException(c, code.ServerError, errors.New("统一验证失败原因: token生成失败"))
 		return
 	}
-	utils.JsonSuccessResponse(c, gin.H{"token": token})
+	survey, err := service.GetSurveyByID(data.ID)
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+	limit, err := service.GetUserLimit(c, data.StudentID, data.ID)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+	leftCount := survey.DailyLimit - limit
+	utils.JsonSuccessResponse(c, gin.H{
+		"token":      token,
+		"left_count": leftCount,
+	})
 }
 
 type getOptionCount struct {
