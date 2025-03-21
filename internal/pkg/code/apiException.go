@@ -31,7 +31,7 @@ var (
 	UniqueError           = NewError(200511, log.LevelInfo, "唯一问题的填写内容重复，请重新填写！")
 	UserExist             = NewError(200512, log.LevelInfo, "该用户已存在")
 	PictureError          = NewError(200513, log.LevelInfo, "仅允许上传图片文件")
-	PictureSizeError      = NewError(200514, log.LevelInfo, "图片大小超出限制")
+	FileSizeError         = NewError(200514, log.LevelInfo, "文件大小超出限制")
 	NotSuperAdmin         = NewError(200513, log.LevelInfo, "很抱歉，您暂无权限注册账号")
 	NoPermission          = NewError(200514, log.LevelInfo, "很抱歉，您暂无权限操作")
 	SurveyNotExist        = NewError(200515, log.LevelInfo, "问卷不存在")

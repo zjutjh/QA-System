@@ -3,16 +3,17 @@ module QA-System
 go 1.22.9
 
 require (
+	github.com/dustin/go-humanize v1.0.1
 	github.com/gin-gonic/gin v1.10.0
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/google/uuid v1.6.0
-	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/xuri/excelize/v2 v2.9.0
 	github.com/zjutjh/WeJH-SDK v0.2.0
 	go.mongodb.org/mongo-driver v1.14.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/image v0.18.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -66,7 +67,7 @@ require (
 
 require (
 	github.com/bytedance/sonic v1.11.6 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3
+	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
 	github.com/gin-contrib/sessions v1.0.2
 	github.com/gin-contrib/sse v0.1.0 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
