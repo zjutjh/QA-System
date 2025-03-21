@@ -2,6 +2,9 @@ package user
 
 import (
 	"errors"
+	"image"
+	"mime/multipart"
+	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
@@ -12,7 +15,10 @@ import (
 	"QA-System/internal/pkg/code"
 	"QA-System/internal/pkg/utils"
 	"QA-System/internal/service"
+	"github.com/dustin/go-humanize"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"go.uber.org/zap"
 )
 
 type submitSurveyData struct {
@@ -256,27 +262,79 @@ func GetSurvey(c *gin.Context) {
 
 // UploadImg 上传图片
 func UploadImg(c *gin.Context) {
-	url, err := service.HandleImgUpload(c)
+	// 获取文件
+	fileHeader, err := c.FormFile("img")
 	if err != nil {
-		if err.Error() == "图片大小超出限制" {
-			code.AbortWithException(c, code.PictureSizeError, err)
-		} else if err.Error() == "仅允许上传图片文件" {
-			code.AbortWithException(c, code.PictureError, err)
-		} else {
-			code.AbortWithException(c, code.ServerError, err)
-		}
+		code.AbortWithException(c, code.ParamError, err)
 		return
 	}
+
+	// 检查文件大小是否超出限制
+	if fileHeader.Size > 10*humanize.MiByte {
+		code.AbortWithException(c, code.FileSizeError, err)
+		return
+	}
+
+	file, err := fileHeader.Open()
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			zap.L().Error("Failed to close file", zap.Error(err))
+		}
+	}(file)
+
+	reader, err := service.ConvertToJPEG(file)
+	if errors.Is(err, image.ErrFormat) {
+		code.AbortWithException(c, code.PictureError, err)
+		return
+	}
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+
+	// 保存图片
+	filename := uuid.New().String() + ".jpg"
+	dst := filepath.Join("./public/static/", filename)
+	err = service.SaveFile(reader, dst)
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+
+	url := service.GetConfigUrl() + "/public/static/" + filename
 	utils.JsonSuccessResponse(c, url)
 }
 
 // UploadFile 上传文件
 func UploadFile(c *gin.Context) {
-	url, err := service.HandleFileUpload(c)
+	// 获取文件
+	fileHeader, err := c.FormFile("file")
+	if err != nil {
+		code.AbortWithException(c, code.ParamError, err)
+		return
+	}
+
+	// 检查文件大小是否超出限制
+	if fileHeader.Size > 50*humanize.MiByte {
+		code.AbortWithException(c, code.FileSizeError, err)
+		return
+	}
+
+	// 保存文件
+	filename := uuid.New().String() + filepath.Ext(fileHeader.Filename)
+	dst := filepath.Join("./public/file/", filename)
+	err = c.SaveUploadedFile(fileHeader, dst)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
 		return
 	}
+
+	url := service.GetConfigUrl() + "/public/file/" + filename
 	utils.JsonSuccessResponse(c, url)
 }
 
