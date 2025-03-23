@@ -14,6 +14,7 @@ import (
 	"QA-System/internal/dao"
 	"QA-System/internal/model"
 	"github.com/gin-gonic/gin"
+	"github.com/zjutjh/WeJH-SDK/oauth"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.uber.org/zap"
 	_ "golang.org/x/image/bmp" // 注册解码器
@@ -78,8 +79,17 @@ func SubmitSurvey(sid int, data []dao.QuestionsList, t string) error {
 }
 
 // CreateOauthRecord 创建一条统一验证记录
-func CreateOauthRecord(stuId string, t time.Time, sid int) error {
-	return d.SaveRecordSheet(ctx, dao.RecordSheet{StudentID: stuId, Time: t}, sid)
+func CreateOauthRecord(userInfo oauth.UserInfo, t time.Time, sid int) error {
+	sheet := dao.RecordSheet{
+		College:      userInfo.College,
+		Name:         userInfo.Name,
+		StudentID:    userInfo.StudentID,
+		UserType:     userInfo.UserType,
+		UserTypeDesc: userInfo.UserTypeDesc,
+		Gender:       userInfo.Gender,
+		Time:         t,
+	}
+	return d.SaveRecordSheet(ctx, sheet, sid)
 }
 
 // ConvertToJPEG 将图片转换为 JPEG 格式
