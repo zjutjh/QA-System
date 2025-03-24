@@ -109,7 +109,10 @@ func SubmitSurvey(c *gin.Context) {
 
 	if survey.Verify {
 		var err error
-
+		if userInfo.UserTypeDesc != "本科生" {
+			code.AbortWithException(c, code.NotUnderGraduateError, errors.New("当前问卷仅允许本科生回答"))
+			return
+		}
 		// 统一检查总投票次数和每日投票次数
 		if flagSum, err = service.CheckLimit(c, stuId, survey, "sumLimit", int(survey.SumLimit)); err != nil {
 			if err.Error() == "sumLimit已达上限" {
@@ -129,7 +132,6 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 	}
-
 	err = service.SubmitSurvey(data.ID, data.QuestionsList, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
