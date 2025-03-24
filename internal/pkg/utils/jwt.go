@@ -16,7 +16,7 @@ var (
 
 // NewJWT 生成 JWT
 func NewJWT(name, college, stuId, userType, userTypeDesc, gender string) string {
-	key = global.Config.GetString("jwt.secret")
+	key = global.Config.GetString("jwt.key")
 	duration := time.Hour * 24 * 7
 	expirationTime := time.Now().Add(duration).Unix() // 设置过期时间
 	t = jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
@@ -37,7 +37,7 @@ func NewJWT(name, college, stuId, userType, userTypeDesc, gender string) string 
 
 // ParseJWT 解析 JWT
 func ParseJWT(token string) (oauth.UserInfo, error) {
-	key = global.Config.GetString("jwt.secret")
+	key = global.Config.GetString("jwt.key")
 	t, err := jwt.Parse(token, func(_ *jwt.Token) (any, error) {
 		return []byte(key), nil
 	})
