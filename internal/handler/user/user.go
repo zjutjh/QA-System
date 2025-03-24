@@ -18,6 +18,7 @@ import (
 	"github.com/dustin/go-humanize"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/zjutjh/WeJH-SDK/oauth"
 	"go.uber.org/zap"
 )
 
@@ -41,14 +42,15 @@ func SubmitSurvey(c *gin.Context) {
 		code.AbortWithException(c, code.ServerError, err)
 		return
 	}
-	var stuId string
+	var userInfo oauth.UserInfo
 	if survey.Verify {
-		stuId, err = utils.ParseJWT(data.Token)
+		userInfo, err = utils.ParseJWT(data.Token)
 		if err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
 	}
+	stuId := userInfo.StudentID
 	questions, err := service.GetQuestionsBySurveyID(survey.ID)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
@@ -107,7 +109,10 @@ func SubmitSurvey(c *gin.Context) {
 
 	if survey.Verify {
 		var err error
-
+		if userInfo.UserTypeDesc != "本科生" {
+			code.AbortWithException(c, code.NotUnderGraduateError, errors.New("当前问卷仅允许本科生回答"))
+			return
+		}
 		// 统一检查总投票次数和每日投票次数
 		if flagSum, err = service.CheckLimit(c, stuId, survey, "sumLimit", int(survey.SumLimit)); err != nil {
 			if err.Error() == "sumLimit已达上限" {
@@ -127,7 +132,6 @@ func SubmitSurvey(c *gin.Context) {
 			return
 		}
 	}
-
 	err = service.SubmitSurvey(data.ID, data.QuestionsList, time.Now().Format("2006-01-02 15:04:05"))
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
@@ -150,7 +154,7 @@ func SubmitSurvey(c *gin.Context) {
 			}
 		}
 		// 记录授权
-		if err := service.CreateOauthRecord(stuId, time.Now(), data.ID); err != nil {
+		if err = service.CreateOauthRecord(userInfo, time.Now(), data.ID); err != nil {
 			code.AbortWithException(c, code.ServerError, err)
 			return
 		}
@@ -351,16 +355,15 @@ func Oauth(c *gin.Context) {
 		code.AbortWithException(c, code.ParamError, err)
 		return
 	}
-	err = service.Oauth(data.StudentID, data.Password)
+	user, err := service.Oauth(data.StudentID, data.Password)
 	if err != nil {
-		if apiErr, ok := err.(*code.Error); ok {
+		var apiErr *code.Error
+		if errors.As(err, &apiErr) {
 			code.AbortWithException(c, apiErr, err)
-		} else {
-			code.AbortWithException(c, code.ServerError, err)
 		}
 		return
 	}
-	token := utils.NewJWT(data.StudentID)
+	token := utils.NewJWT(user.Name, user.College, user.StudentID, user.UserType, user.UserTypeDesc, user.Gender)
 	if token == "" {
 		code.AbortWithException(c, code.ServerError, errors.New("统一验证失败原因: token生成失败"))
 		return

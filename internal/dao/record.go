@@ -10,8 +10,13 @@ import (
 
 // RecordSheet 记录表模型
 type RecordSheet struct {
-	StudentID string    `json:"student_id" bson:"student_id"` // 学生ID
-	Time      time.Time `json:"time" bson:"time"`             // 答卷时间
+	College      string    `json:"college" bson:"college"`               // 学院
+	Name         string    `json:"name" bson:"name"`                     // 姓名
+	StudentID    string    `json:"student_id" bson:"student_id"`         // 学生ID
+	UserType     string    `json:"user_type" bson:"user_type"`           // 用户类型id
+	UserTypeDesc string    `json:"user_type_desc" bson:"user_type_desc"` // 用户类型 text
+	Gender       string    `json:"gender" bson:"gender"`                 // 性别
+	Time         time.Time `json:"time" bson:"time"`                     // 答卷时间
 }
 
 // SaveRecordSheet 将记录直接保存到 MongoDB 集合中

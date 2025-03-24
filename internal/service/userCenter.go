@@ -1,11 +1,10 @@
 package service
 
 import (
-	"net/url"
-
 	"QA-System/internal/pkg/api/userCenterApi"
 	"QA-System/internal/pkg/code"
 	"QA-System/internal/pkg/request"
+	"github.com/zjutjh/WeJH-SDK/oauth"
 )
 
 // UserCenterResponse 用户中心响应结构体
@@ -37,41 +36,11 @@ func FetchHandleOfPost(form map[string]any, webUrl string) (*UserCenterResponse,
 }
 
 // Oauth 统一登录验证
-func Oauth(sid, password string) error {
-	loginUrl, err := url.Parse(userCenterApi.OAuth)
+func Oauth(sid, password string) (oauth.UserInfo, error) {
+	_, user, err := oauth.GetUserInfo(sid, password)
 	if err != nil {
-		return err
-	}
-	urlPath := loginUrl.String()
-	regMap := map[string]any{
-		"stu_id":   sid,
-		"password": password,
-	}
-	resp, err := FetchHandleOfPost(regMap, urlPath)
-	if err != nil {
-		return code.RequestError
+		return oauth.UserInfo{}, err
 	}
 
-	// 使用 handleLoginErrors 函数处理响应码
-	return handleLoginErrors(resp.Code)
-}
-
-// handleRegErrors 根据响应码处理不同的错误
-func handleLoginErrors(num int) error {
-	switch num {
-	case 404:
-		return code.UserNotFound
-	case 409:
-		return code.NoThatPasswordOrWrong
-	case 408:
-		return code.HttpTimeout
-	case 410:
-		return code.ServerError
-	case 507:
-		return code.OauthTimeError
-	case 200:
-		return nil
-	default:
-		return code.ServerError
-	}
+	return user, err
 }

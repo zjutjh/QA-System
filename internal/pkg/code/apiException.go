@@ -51,6 +51,7 @@ var (
 	StatusRepeatError     = NewError(200529, log.LevelInfo, "问卷状态重复，请重新选择")
 	AnswerSheetNotExist   = NewError(200530, log.LevelInfo, "答卷不存在,请重新选择")
 	VoteSumLimitError     = NewError(200531, log.LevelInfo, "总投票次数已达上限")
+	NotUnderGraduateError = NewError(200532, log.LevelInfo, "当前问卷仅允许本科生提交")
 	NotFound              = NewError(200404, log.LevelInfo, http.StatusText(http.StatusNotFound))
 )
 
