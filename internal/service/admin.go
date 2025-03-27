@@ -151,7 +151,6 @@ func UpdateSurvey(id int, question_list []dao.QuestionList, surveyType,
 	if err != nil {
 		return err
 	}
-	new_imgs = append(new_imgs, question_list[1].Img)
 	// 重新添加问题和选项
 	imgs, err := createQuestionsAndOptions(question_list, id)
 	if err != nil {

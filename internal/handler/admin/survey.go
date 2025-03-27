@@ -57,7 +57,7 @@ func CreateSurvey(c *gin.Context) {
 	}
 	// 检查总投票次数大于日投票数
 	if data.BaseConfig.SumLimit != 0 && data.BaseConfig.DailyLimit != 0 &&
-		data.BaseConfig.SumLimit <= data.BaseConfig.DailyLimit {
+		data.BaseConfig.SumLimit < data.BaseConfig.DailyLimit {
 		code.AbortWithException(c, code.SurveyError, errors.New("总投票次数小于单日投票次数"))
 		return
 	}
@@ -315,7 +315,7 @@ func UpdateSurvey(c *gin.Context) {
 		return
 	}
 	if data.BaseConfig.SumLimit != 0 && data.BaseConfig.DailyLimit != 0 &&
-		data.BaseConfig.SumLimit <= data.BaseConfig.DailyLimit {
+		data.BaseConfig.SumLimit < data.BaseConfig.DailyLimit {
 		code.AbortWithException(c, code.SurveyError, errors.New("总投票次数小于单日投票次数"))
 		return
 	}
