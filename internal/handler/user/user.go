@@ -19,6 +19,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/zjutjh/WeJH-SDK/oauth"
+	"github.com/zjutjh/WeJH-SDK/oauth/oauthException"
 	"go.uber.org/zap"
 )
 
@@ -357,9 +358,20 @@ func Oauth(c *gin.Context) {
 	}
 	user, err := service.Oauth(data.StudentID, data.Password)
 	if err != nil {
-		var apiErr *code.Error
-		if errors.As(err, &apiErr) {
-			code.AbortWithException(c, apiErr, err)
+		var oauthErr *oauthException.Error
+		if !errors.As(err, &oauthErr) {
+			code.AbortWithException(c, code.ServerError, err)
+			return
+		}
+
+		switch {
+		case errors.Is(oauthErr, oauthException.WrongPassword),
+			errors.Is(oauthErr, oauthException.WrongAccount):
+			code.AbortWithException(c, code.WrongOauthUsernameOrPassword, err)
+		case errors.Is(oauthErr, oauthException.ClosedError):
+			code.AbortWithException(c, code.OauthTimeError, err)
+		default:
+			code.AbortWithException(c, code.ServerError, err)
 		}
 		return
 	}
