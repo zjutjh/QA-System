@@ -12,8 +12,8 @@ import (
 
 // BaseConfig 基本配置模型
 type BaseConfig struct {
-	StartTime  string `json:"start_time"`
-	EndTime    string `json:"end_time"`
+	StartTime  string `json:"start_time" binding:"datetime=2006-01-02T15:04:05+08:00"`
+	EndTime    string `json:"end_time" binding:"datetime=2006-01-02T15:04:05+08:00"`
 	DailyLimit uint   `json:"day_limit"` // 问卷每日填写限制
 	SumLimit   uint   `json:"sum_limit"` // 问卷总填写次数限制
 	Verify     bool   `json:"verify"`    // 问卷是否需要统一验证
