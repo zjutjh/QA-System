@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"go.uber.org/zap"
+
 	"QA-System/internal/dao"
 	"QA-System/internal/model"
 	"QA-System/internal/pkg/oss"
@@ -181,7 +183,10 @@ func UpdateSurvey(id int64, question_list []dao.QuestionList, surveyType,
 	// 删除无用图片
 	for _, oldImg := range oldImgs {
 		if !contains(newImgs, oldImg) {
-			_, _ = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(oldImg))
+			_, err = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(oldImg))
+			if err != nil {
+				zap.L().Warn("删除旧图片失败", zap.String("img", oldImg), zap.Error(err))
+			}
 		}
 	}
 	return nil
@@ -216,11 +221,17 @@ func DeleteSurvey(id int64) error {
 		return err
 	}
 	for _, img := range imgs {
-		_, _ = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(img))
+		_, err = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(img))
+		if err != nil {
+			zap.L().Warn("删除旧图片失败", zap.String("img", img), zap.Error(err))
+		}
 	}
 
 	for _, file := range files {
-		_, _ = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(file))
+		_, err = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(file))
+		if err != nil {
+			zap.L().Warn("删除旧文件失败", zap.String("file", file), zap.Error(err))
+		}
 	}
 	// 删除答卷
 	err = DeleteAnswerSheetBySurveyID(id)
@@ -472,7 +483,7 @@ func getDelImgs(questions []model.Question, answerSheets []dao.AnswerSheet) ([]s
 		}
 		for _, option := range options {
 			if option.Img != "" {
-				imgs = append(imgs, question.Img)
+				imgs = append(imgs, option.Img)
 			}
 		}
 	}
