@@ -10,13 +10,8 @@ import (
 	"QA-System/internal/pkg/redis"
 )
 
-// Option 选项模型
-type Option struct {
-	SerialNum   int    `json:"serial_num"`  // 选项序号
-	Content     string `json:"content"`     // 选项内容
-	Description string `json:"description"` // 选项描述
-	Img         string `json:"img"`         // 图片
-}
+// Option 选项 DTO 别名，保持向后兼容
+type Option = model.OptionItem
 
 // CreateOption 创建选项
 func (d *Dao) CreateOption(ctx context.Context, option model.Option) error {

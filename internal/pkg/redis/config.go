@@ -8,8 +8,8 @@ import (
 // RedisClient Redis客户端
 var RedisClient *redis.Client
 
-func init() {
+// Init 显式初始化 Redis 客户端。必须在使用 RedisClient 前调用。
+func Init() {
 	info := getConfig()
-
 	RedisClient = redisHelper.Init(&info)
 }
