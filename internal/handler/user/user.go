@@ -673,22 +673,15 @@ func GetSurveyStatistics(c *gin.Context) {
 	utils.JsonSuccessResponse(c, gin.H{"statistics": response})
 }
 
-func ensureMap(m map[int]map[int]int, key int) map[int]int {
-	if m[key] == nil {
-		m[key] = make(map[int]int)
-	}
-	return m[key]
-}
-
 type getAnswerRecordData struct {
-	SurveyID int64  `json:"survey_id" binding:"required"`
-	Token    string `json:"token" binding:"required"`
+	SurveyID int64  `json:"survey_id" form:"survey_id" binding:"required"`
+	Token    string `json:"token" form:"token" binding:"required"`
 }
 
 // GetAnswerRecord 用户获取问卷填写记录
 func GetAnswerRecord(c *gin.Context) {
 	var data getAnswerRecordData
-	err := c.ShouldBindJSON(&data)
+	err := c.ShouldBindQuery(&data)
 	if err != nil {
 		code.AbortWithException(c, code.ParamError, err)
 		return
@@ -700,10 +693,6 @@ func GetAnswerRecord(c *gin.Context) {
 	}
 	if !survey.Verify {
 		code.AbortWithException(c, code.SurveyTypeError, errors.New("问卷非需统一验证问卷"))
-		return
-	}
-	if survey.Type != 1 {
-		code.AbortWithException(c, code.SurveyTypeError, errors.New("问卷为调研问卷"))
 		return
 	}
 	// 获取用户信息
@@ -730,14 +719,7 @@ func GetAnswerRecord(c *gin.Context) {
 
 	records := service.CreateRecordDetailResponseWithQuestions(userAnswerSheets, questions)
 
-	statistics, err := service.CreateRecordResponse(userAnswerSheets, questions)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-
 	utils.JsonSuccessResponse(c, gin.H{
-		"records":    records,
-		"statistics": statistics,
+		"records": records,
 	})
 }
