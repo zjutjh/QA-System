@@ -366,9 +366,10 @@ func SortSurvey(originalSurveys []model.Survey) []model.Survey {
 			continue
 		}
 
-		if survey.Status == 1 {
+		switch survey.Status {
+		case 1:
 			status1Surveys = append(status1Surveys, survey)
-		} else if survey.Status == 2 {
+		case 2:
 			status2Surveys = append(status2Surveys, survey)
 		}
 	}
@@ -403,8 +404,6 @@ func GetManagedSurveyByUserID(userId int) ([]model.Manage, error) {
 // GetAllSurveyAnswers 获取所有问卷答案
 func GetAllSurveyAnswers(id int64) (dao.AnswersResonse, error) {
 	data := make([]dao.QuestionAnswers, 0)
-	answerSheets := make([]dao.AnswerSheet, 0)
-	questions := make([]model.Question, 0)
 	times := make([]string, 0)
 	questions, err := d.GetQuestionsBySurveyID(ctx, id)
 	if err != nil {
@@ -418,7 +417,7 @@ func GetAllSurveyAnswers(id int64) (dao.AnswersResonse, error) {
 		data = append(data, q)
 		questionIndex[question.ID] = len(data) - 1
 	}
-	answerSheets, _, err = d.GetAnswerSheetBySurveyID(ctx, id, 0, 0, "", true)
+	answerSheets, _, err := d.GetAnswerSheetBySurveyID(ctx, id, 0, 0, "", true)
 	if err != nil {
 		return dao.AnswersResonse{}, err
 	}

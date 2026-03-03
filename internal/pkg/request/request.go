@@ -27,7 +27,7 @@ func New() Client {
 			SetRetryMaxWaitTime(2 * time.Second), // 最大重试等待时间,
 	}
 	// 添加重试条件：仅对特定的 HTTP 状态码或错误类型重试
-	s.Client.AddRetryCondition(func(r *resty.Response, err error) bool {
+	s.AddRetryCondition(func(r *resty.Response, err error) bool {
 		// 如果发生网络错误，或者返回的 HTTP 状态码是 5xx，执行重试
 		if err != nil || (r.StatusCode() >= 500 && r.StatusCode() < 600) {
 			return true
@@ -35,7 +35,7 @@ func New() Client {
 		return false
 	})
 	// 添加重试条件
-	s.Client.AddRetryCondition(func(r *resty.Response, err error) bool {
+	s.AddRetryCondition(func(r *resty.Response, err error) bool {
 		if err != nil {
 			// 网络错误时重试
 			zap.L().Error("Network error: %v. Retrying..." + err.Error())
@@ -63,9 +63,7 @@ func New() Client {
 
 		// 根据业务逻辑判断是否需要重试
 		switch resp.Code {
-		case 200:
-			return false
-		case 409:
+		case 200, 409:
 			return false
 		default:
 			return true
