@@ -192,3 +192,48 @@ func UpdateEmail(c *gin.Context) {
 	}
 	utils.JsonSuccessResponse(c, nil)
 }
+
+// requireLogin 从 session 获取当前登录管理员，未登录时直接中断请求并返回 false。
+func requireLogin(c *gin.Context) (*model.User, bool) {
+	user, err := service.GetUserSession(c)
+	if err != nil {
+		code.AbortWithException(c, code.NotLogin, err)
+		return nil, false
+	}
+	return user, true
+}
+
+// requireSuperAdmin 要求当前登录用户是超级管理员（AdminType == 2）。
+// 未登录或权限不足时直接中断请求并返回 false。
+func requireSuperAdmin(c *gin.Context) (*model.User, bool) {
+	user, ok := requireLogin(c)
+	if !ok {
+		return nil, false
+	}
+	if user.AdminType != 2 {
+		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"没有权限"))
+		return nil, false
+	}
+	return user, true
+}
+
+// requireSurveyPermission 要求当前登录用户对指定问卷有操作权限。
+// 权限规则：超级管理员(2) 通过；普通管理员(1) 且是问卷拥有者 通过；被授权管理用户 通过。
+// 返回当前用户和问卷，失败时直接中断请求。
+func requireSurveyPermission(c *gin.Context, surveyID int64) (*model.User, *model.Survey, bool) {
+	user, ok := requireLogin(c)
+	if !ok {
+		return nil, nil, false
+	}
+	survey, err := service.GetSurveyByID(surveyID)
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return nil, nil, false
+	}
+	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) &&
+		!service.UserInManage(user.ID, survey.ID) {
+		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
+		return nil, nil, false
+	}
+	return user, survey, true
+}

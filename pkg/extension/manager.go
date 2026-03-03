@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sync"
-
-	"QA-System/internal/global/config"
 )
 
 // 默认单例实例插件管理器实例
@@ -31,9 +29,9 @@ type PluginManager struct {
 type PluginManagerInterface interface {
 	RegisterPlugin(p Plugin)
 	GetPlugin(name string) (Plugin, bool)
-	LoadPlugins() ([]Plugin, error)
+	LoadPlugins(pluginNames []string) ([]Plugin, error)
 	ExecutePlugin(name string, params map[string]any) error
-	ExecutePluginList() error
+	ExecutePluginList(pluginNames []string) error
 }
 
 // NewPluginManager 创建一个新的插件管理器实例
@@ -125,8 +123,8 @@ func (pm *PluginManager) ExecutePluginSafely(name string, params map[string]any)
 }
 
 // ExecutePluginList 链式执行插件列表（这个功能还在调）
-func (pm *PluginManager) ExecutePluginList() error {
-	pluginList, err := pm.LoadPlugins()
+func (pm *PluginManager) ExecutePluginList(pluginNames []string) error {
+	pluginList, err := pm.LoadPlugins(pluginNames)
 	if err != nil {
 		return err
 	}
@@ -162,12 +160,12 @@ func (pm *PluginManager) GetPlugin(name string) (Plugin, bool) {
 	return p, ok
 }
 
-// LoadPlugins 从配置文件中加载插件并返回插件实例列表
-func (pm *PluginManager) LoadPlugins() ([]Plugin, error) {
-	pluginNames := config.Config.GetStringSlice("plugins.order")
-	pm.logger.Info("Detecting plugins from config",
+// LoadPlugins 按照给定的插件名称顺序加载已注册的插件并返回实例列表。
+// pluginNames 为空时返回空列表。
+func (pm *PluginManager) LoadPlugins(pluginNames []string) ([]Plugin, error) {
+	pm.logger.Info("Detecting plugins",
 		"plugin_names", pluginNames)
-	pluginList := make([]Plugin, 0)
+	pluginList := make([]Plugin, 0, len(pluginNames))
 
 	for _, name := range pluginNames {
 		p, ok := pm.GetPlugin(name)

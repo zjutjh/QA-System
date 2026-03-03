@@ -10,51 +10,14 @@ import (
 	"QA-System/internal/pkg/redis"
 )
 
-// BaseConfig 基本配置模型
-type BaseConfig struct {
-	StartTime     string `json:"start_time" binding:"datetime=2006-01-02T15:04:05+08:00"`
-	EndTime       string `json:"end_time" binding:"datetime=2006-01-02T15:04:05+08:00"`
-	DailyLimit    uint   `json:"day_limit"`      // 问卷每日填写限制
-	SumLimit      uint   `json:"sum_limit"`      // 问卷总填写次数限制
-	Verify        bool   `json:"verify"`         // 问卷是否需要统一验证
-	UndergradOnly bool   `json:"undergrad_only"` // 是否只限制本科生作答
-	NeedNotify    bool   `json:"need_notify"`    // 问卷在收到回复时是否需要提醒
-}
-
-// QuestionConfig 问题配置模型
-type QuestionConfig struct {
-	Desc         string         `json:"desc" `
-	Title        string         `json:"title"`
-	QuestionList []QuestionList `json:"question_list"`
-}
-
-// QuestionList 问题列表模型
-type QuestionList struct {
-	SerialNum       int             `json:"serial_num"`   // 题目序号
-	Subject         string          `json:"subject"`      // 问题
-	Description     string          `json:"description"`  // 问题描述
-	Img             string          `json:"img"`          // 图片
-	QuestionSetting QuestionSetting `json:"ques_setting"` // 问题设置
-	Options         []Option        `json:"options"`      // 选项
-}
-
-// QuestionSetting 问题设置模型
-type QuestionSetting struct {
-	Required      bool     `json:"required"`                                           // 是否必填
-	Unique        bool     `json:"unique"`                                             // 是否唯一
-	OtherOption   bool     `json:"other_option"`                                       // 是否有其他选项
-	QuestionType  int      `json:"question_type" binding:"required,oneof=1 2 3 4 5 6"` // 问题类型 1单选2多选3填空4简答5图片6文件
-	Reg           string   `json:"reg"`                                                // 正则表达式
-	Options       []Option `json:"options"`                                            // 选项
-	MaximumOption uint     `json:"maximum_option"`                                     // 多选最多选项数 0为不限制
-	MinimumOption uint     `json:"minimum_option"`                                     // 多选最少选项数 0为不限制
-}
-
-// QuestionsList 问题列表模型
-type QuestionsList struct {
-	QuestionID int    `json:"question_id" binding:"required"`
-	Answer     string `json:"answer"`
-}
+// 类型别名：保持向后兼容，后续逐步迁移为 model.* 直接引用
+type (
+	BaseConfig      = model.BaseConfig
+	QuestionConfig  = model.QuestionConfig
+	QuestionList    = model.QuestionList
+	QuestionSetting = model.QuestionSetting
+	QuestionsList   = model.QuestionSubmit
+)
 
 // CreateQuestion 创建问题
 func (d *Dao) CreateQuestion(ctx context.Context, question model.Question) (model.Question, error) {

@@ -26,15 +26,11 @@ func CreatePermission(c *gin.Context) {
 		return
 	}
 	// 鉴权
-	admin, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
+	admin, ok := requireSuperAdmin(c)
+	if !ok {
 		return
 	}
-	if admin.AdminType != 2 {
-		code.AbortWithException(c, code.NoPermission, errors.New(admin.Username+"没有权限"))
-		return
-	}
+	_ = admin // admin validated above
 	user, err := service.GetUserByName(data.UserName)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)
@@ -81,15 +77,11 @@ func DeletePermission(c *gin.Context) {
 		return
 	}
 	// 鉴权
-	admin, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
+	admin, ok := requireSuperAdmin(c)
+	if !ok {
 		return
 	}
-	if admin.AdminType != 2 {
-		code.AbortWithException(c, code.NoPermission, errors.New(admin.Username+"没有权限"))
-		return
-	}
+	_ = admin // admin validated above
 	user, err := service.GetUserByName(data.UserName)
 	if err != nil {
 		code.AbortWithException(c, code.ServerError, err)

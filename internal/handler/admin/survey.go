@@ -6,23 +6,20 @@ import (
 	"strconv"
 	"time"
 
-	"QA-System/internal/dao"
 	"QA-System/internal/model"
 	"QA-System/internal/pkg/code"
 	"QA-System/internal/pkg/utils"
 	"QA-System/internal/service"
 
 	"github.com/gin-gonic/gin"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
 	"gorm.io/gorm"
 )
 
 type createSurveyData struct {
-	Status         int                `json:"status" binding:"required,oneof=1 2"`
-	SurveyType     uint               `json:"survey_type"` // 问卷类型 0:调研 1:投票
-	BaseConfig     dao.BaseConfig     `json:"base_config"` // 基本配置
-	QuestionConfig dao.QuestionConfig `json:"ques_config"` // 问题设置
+	Status         int                  `json:"status" binding:"required,oneof=1 2"`
+	SurveyType     uint                 `json:"survey_type"` // 问卷类型 0:调研 1:投票
+	BaseConfig     model.BaseConfig     `json:"base_config"` // 基本配置
+	QuestionConfig model.QuestionConfig `json:"ques_config"` // 问题设置
 }
 
 // CreateSurvey 创建问卷
@@ -166,22 +163,9 @@ func UpdateSurveyStatus(c *gin.Context) {
 		code.AbortWithException(c, code.ParamError, err)
 		return
 	}
-	// 鉴权
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-	// 获取问卷
-	survey, err := service.GetSurveyByID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	// 判断权限
-	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) &&
-		!service.UserInManage(user.ID, survey.ID) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
+	// 鉴权 + 权限检查
+	_, survey, ok := requireSurveyPermission(c, data.ID)
+	if !ok {
 		return
 	}
 	// 判断问卷状态
@@ -254,10 +238,10 @@ func UpdateSurveyStatus(c *gin.Context) {
 }
 
 type updateSurveyData struct {
-	ID             int64              `json:"id" binding:"required"`
-	SurveyType     uint               `json:"survey_type"` // 问卷类型 0:调研 1:投票
-	BaseConfig     dao.BaseConfig     `json:"base_config"` // 基本配置
-	QuestionConfig dao.QuestionConfig `json:"ques_config"` // 问题设置
+	ID             int64                `json:"id" binding:"required"`
+	SurveyType     uint                 `json:"survey_type"` // 问卷类型 0:调研 1:投票
+	BaseConfig     model.BaseConfig     `json:"base_config"` // 基本配置
+	QuestionConfig model.QuestionConfig `json:"ques_config"` // 问题设置
 }
 
 // UpdateSurvey 修改问卷
@@ -410,62 +394,6 @@ func DeleteSurvey(c *gin.Context) {
 		return
 	}
 	utils.JsonSuccessResponse(c, nil)
-}
-
-type getSurveyAnswersData struct {
-	ID       int64  `form:"id" binding:"required"`
-	Text     string `form:"text"`
-	Unique   bool   `form:"unique"`
-	PageNum  int    `form:"page_num" binding:"required,gt=0"`
-	PageSize int    `form:"page_size" binding:"required,gt=0"`
-}
-
-// GetSurveyAnswers 获取问卷收集数据
-func GetSurveyAnswers(c *gin.Context) {
-	var data getSurveyAnswersData
-	err := c.ShouldBindQuery(&data)
-	if err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-	// 鉴权
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-	// 获取问卷
-	survey, err := service.GetSurveyByID(data.ID)
-	if errors.Is(err, gorm.ErrRecordNotFound) {
-		code.AbortWithException(c, code.SurveyNotExist, errors.New("问卷不存在"))
-		return
-	} else if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	// 判断权限
-	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) &&
-		!service.UserInManage(user.ID, survey.ID) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-	// 获取问卷收集数据
-	var num *int64
-	answers, num, err := service.GetSurveyAnswers(data.ID, data.PageNum, data.PageSize, data.Text, data.Unique)
-	if err != nil {
-		if err.Error() == "页数超出范围" {
-			code.AbortWithException(c, code.PageBeyondError, err)
-		} else {
-			code.AbortWithException(c, code.ServerError, err)
-		}
-		return
-	}
-
-	utils.JsonSuccessResponse(c, gin.H{
-		"answers_data":   answers,
-		"survey_type":    survey.Type,
-		"total_page_num": math.Ceil(float64(*num) / float64(data.PageSize)),
-	})
 }
 
 type getAllSurveyData struct {
@@ -625,281 +553,4 @@ func GetSurvey(c *gin.Context) {
 	}
 
 	utils.JsonSuccessResponse(c, response)
-}
-
-type downloadFileData struct {
-	ID int64 `form:"id" binding:"required"`
-}
-
-// DownloadFile 下载
-func DownloadFile(c *gin.Context) {
-	var data downloadFileData
-	err := c.ShouldBindQuery(&data)
-	if err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-	// 获取问卷
-	survey, err := service.GetSurveyByID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	// 判断权限
-	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) &&
-		!service.UserInManage(user.ID, survey.ID) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-	// 获取数据
-	answers, err := service.GetAllSurveyAnswers(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	url, err := service.HandleDownloadFile(answers, survey)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	utils.JsonSuccessResponse(c, url)
-}
-
-type getSurveyStatisticsData struct {
-	ID       int64 `form:"id" binding:"required"`
-	PageNum  int   `form:"page_num" binding:"required,gt=0"`
-	PageSize int   `form:"page_size" binding:"required,gt=0"`
-}
-
-// GetSurveyStatistics 获取统计问卷选择题数据
-func GetSurveyStatistics(c *gin.Context) {
-	var data getSurveyStatisticsData
-	if err := c.ShouldBindQuery(&data); err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-
-	survey, err := service.GetSurveyByID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-
-	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) &&
-		!service.UserInManage(user.ID, survey.ID) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-
-	answersheets, err := service.GetSurveyAnswersBySurveyID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-
-	questions, err := service.GetQuestionsBySurveyID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-
-	response := service.GenerateQuestionStats(questions, answersheets)
-	start := (data.PageNum - 1) * data.PageSize
-	end := start + data.PageSize
-	// 确保 start 和 end 在有效范围内
-	if start < 0 {
-		start = 0
-	}
-	if end > len(response) {
-		end = len(response)
-	}
-	if start > end {
-		start = end
-	}
-
-	// 访问切片
-	resp := response[start:end]
-	totalSumPage := math.Ceil(float64(len(response)) / float64(data.PageSize))
-
-	utils.JsonSuccessResponse(c, gin.H{
-		"statistics":     resp,
-		"total":          len(answersheets),
-		"total_sum_page": totalSumPage,
-		"survey_type":    survey.Type,
-	})
-}
-
-type getQuestionPreData struct {
-	Type string `form:"type"`
-}
-
-// GetQuestionPre 获取预先信息
-func GetQuestionPre(c *gin.Context) {
-	var data getQuestionPreData
-	if err := c.ShouldBindQuery(&data); err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-
-	if (user.AdminType != 2) && (user.AdminType != 1) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-
-	// 获取预先信息
-	value, err := service.GetQuestionPre(data.Type)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	utils.JsonSuccessResponse(c, gin.H{
-		"value": value,
-	})
-}
-
-type createQuestionPreData struct {
-	Type  string   `json:"type"`
-	Value []string `json:"value"`
-}
-
-// CreateQuestionPre 创建预先信息
-func CreateQuestionPre(c *gin.Context) {
-	var data createQuestionPreData
-	if err := c.ShouldBindJSON(&data); err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-
-	if (user.AdminType != 2) && (user.AdminType != 1) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-
-	// 创建预先信息
-	err = service.CreateQuestionPre(data.Type, data.Value)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	utils.JsonSuccessResponse(c, nil)
-}
-
-type deleteAnswerSheetData struct {
-	AnswerID string `bson:"_id" form:"answer_id" binding:"required"`
-}
-
-// DeleteAnswerSheet 删除答卷
-func DeleteAnswerSheet(c *gin.Context) {
-	var data deleteAnswerSheetData
-	err := c.ShouldBindQuery(&data)
-	if err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-	// 鉴权
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-
-	// 将 AnswerID 转换为 ObjectID
-	objectID, err := primitive.ObjectIDFromHex(data.AnswerID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	// 获取问卷
-	err = service.GetAnswerSheetByAnswerID(objectID)
-	if errors.Is(err, mongo.ErrNoDocuments) {
-		code.AbortWithException(c, code.AnswerSheetNotExist, errors.New("答卷不存在"))
-		return
-	} else if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	// 判断权限
-	if user.AdminType != 2 {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-	// 删除答卷
-	err = service.DeleteAnswerSheetByAnswerID(objectID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	utils.JsonSuccessResponse(c, nil)
-}
-
-type downloadChooseData struct {
-	ID int64 `form:"id" binding:"required"`
-}
-
-// DownloadChooseFile 下载选择题数据
-func DownloadChooseFile(c *gin.Context) {
-	var data downloadChooseData
-	err := c.ShouldBindQuery(&data)
-	if err != nil {
-		code.AbortWithException(c, code.ParamError, err)
-		return
-	}
-	user, err := service.GetUserSession(c)
-	if err != nil {
-		code.AbortWithException(c, code.NotLogin, err)
-		return
-	}
-	// 获取问卷
-	survey, err := service.GetSurveyByID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	// 判断权限
-	if (user.AdminType != 2) && (user.AdminType != 1 || survey.UserID != user.ID) &&
-		!service.UserInManage(user.ID, survey.ID) {
-		code.AbortWithException(c, code.NoPermission, errors.New(user.Username+"无权限"))
-		return
-	}
-	// 获取数据
-	answers, err := service.GetSurveyAnswersBySurveyID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	questions, err := service.GetQuestionsBySurveyID(data.ID)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	stats := service.GenerateQuestionStats(questions, answers)
-	url, err := service.HandleChooseStatistics(survey, stats)
-	if err != nil {
-		code.AbortWithException(c, code.ServerError, err)
-		return
-	}
-	utils.JsonSuccessResponse(c, url)
 }
