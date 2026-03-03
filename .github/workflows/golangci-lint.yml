@@ -22,11 +22,13 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5  # 使用 GitHub 提供的 setup-go 动作，设置 Go 环境
         with:
-          go-version: stable
+          go-version-file: go.mod
 
-      # 第三步：运行 golangci-lint
+      # 第三步：安装并运行 golangci-lint v2
+      - name: Install golangci-lint
+        run: |
+          go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.6.2
+
       - name: Run golangci-lint
-        uses: golangci/golangci-lint-action@v6  # 使用 golangci-lint-action
-        with:
-          version: latest  # 指定 golangci-lint 版本
-          args: '--config .golangci.yml'  # 使用指定的配置文件
+        run: |
+          golangci-lint run --config .golangci.yml
