@@ -76,6 +76,7 @@ make build
 5. 测试代码
 第一次先安装[golangci-lint](https://github.com/golangci/golangci-lint/releases)
 
+
 由于部分功能要求使用diff，因此windows环境下推荐到git bash下执行。
 ``` bash
 golangci-lint run
