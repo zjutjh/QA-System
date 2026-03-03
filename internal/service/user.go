@@ -3,6 +3,7 @@ package service
 import (
 	_ "image/gif" // 注册解码器
 	_ "image/png" // 注册解码器
+	"sync"
 	"sort"
 	"strings"
 	"time"

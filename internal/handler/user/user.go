@@ -227,7 +227,7 @@ func GetSurvey(c *gin.Context) {
 		return
 	}
 	// 判断问卷是否开放
-	if survey.Status != 2 && (user == nil || data.IsPreVisible == 0) {
+	if survey.Status != 2 && (user == nil || !data.IsPreVisible) {
 		code.AbortWithException(c, code.SurveyNotOpen, errors.New("问卷未开放"))
 		return
 	}
@@ -671,6 +671,13 @@ func GetSurveyStatistics(c *gin.Context) {
 		})
 	}
 	utils.JsonSuccessResponse(c, gin.H{"statistics": response})
+}
+
+func ensureMap(m map[int]map[int]int, key int) map[int]int {
+	if m[key] == nil {
+		m[key] = make(map[int]int)
+	}
+	return m[key]
 }
 
 type getAnswerRecordData struct {
