@@ -153,6 +153,38 @@ func CreateSurvey(c *gin.Context) {
 	utils.JsonSuccessResponse(c, nil)
 }
 
+type copySurveyData struct {
+	ID 				int64 				`json:"id" binding:"required"`
+}
+
+func CopySurvey(c *gin.Context) {
+	var data copySurveyData
+	err := c.ShouldBindJSON(&data)
+	if err != nil {
+		code.AbortWithException(c, code.ParamError, err)
+		return
+	}
+	// 鉴权
+	user, err := service.GetUserSession(c)
+	if err != nil {
+		code.AbortWithException(c, code.NotLogin, err)
+		return
+	}
+	// 获取问卷
+	survey, err := service.GetSurveyByID(data.ID)
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+	// 复制问卷
+	newID, err := service.CopySurvey(user.ID, survey.ID)
+	if err != nil {
+		code.AbortWithException(c, code.ServerError, err)
+		return
+	}
+	utils.JsonSuccessResponse(c, gin.H{"id": newID})
+}
+
 type updateSurveyStatusData struct {
 	ID     int64 `json:"id" binding:"required"`
 	Status int   `json:"status" binding:"required,oneof=1 2"`
