@@ -2,6 +2,8 @@ package service
 
 import (
 	"errors"
+	"bytes"
+	"io"
 	"fmt"
 	"log"
 	"os"
@@ -122,6 +124,139 @@ func CreateSurvey(id int, question_list []dao.QuestionList, status int, surveyTy
 		return err
 	})
 }
+
+func CopySurvey(userID int, surveyID int64) (int64, error) {
+	surveyOriginal, err := d.GetSurveyByID(ctx, surveyID)
+	if err != nil {
+		return 0, err
+	}
+
+	var copiedSurveyID int64
+	copiedImageURLs := make([]string, 0)
+	cleanupCopiedImages := func() {
+		for _, imgURL := range copiedImageURLs {
+			_, _ = oss.Client.DeleteFile(oss.Client.GetObjectKeyFromUrl(imgURL))
+		}
+	}
+	err = dao.RunInTx(d, ctx, func(store dao.Daos) error {
+		var survey model.Survey
+		survey.ID = idgen.NextId()
+		survey.UserID = userID
+		survey.Status = 1
+		survey.Deadline = surveyOriginal.Deadline
+		survey.Type = surveyOriginal.Type
+		survey.DailyLimit = surveyOriginal.DailyLimit
+		survey.SumLimit = surveyOriginal.SumLimit
+		survey.Verify = surveyOriginal.Verify
+		survey.UndergradOnly = surveyOriginal.UndergradOnly
+		survey.StartTime = surveyOriginal.StartTime
+		survey.Title = surveyOriginal.Title
+		survey.Desc = surveyOriginal.Desc
+		survey.NeedNotify = surveyOriginal.NeedNotify
+
+		createdSurvey, err := store.CreateSurvey(ctx, survey)
+		if err != nil {
+			return err
+		}
+		copiedSurveyID = createdSurvey.ID
+
+		oldQuestions, err := store.GetQuestionsBySurveyID(ctx, surveyID)
+		if err != nil {
+			return err
+		}
+		for _, question := range oldQuestions {
+			var newQuestion model.Question
+			newQuestion.SurveyID = copiedSurveyID
+			newQuestion.SerialNum = question.SerialNum
+			newImg, err := copySurveyImage(question.Img)
+			if err != nil {
+				return err
+			}
+			newQuestion.Img = newImg
+			if newQuestion.Img != "" {
+				copiedImageURLs = append(copiedImageURLs, newQuestion.Img)
+			}
+			newQuestion.Subject = question.Subject
+			newQuestion.Description = question.Description
+			newQuestion.Required = question.Required
+			newQuestion.Unique = question.Unique
+			newQuestion.OtherOption = question.OtherOption
+			newQuestion.QuestionType = question.QuestionType
+			newQuestion.MaximumOption = question.MaximumOption
+			newQuestion.MinimumOption = question.MinimumOption
+			newQuestion.Reg = question.Reg
+			newQuestion, err = store.CreateQuestion(ctx, newQuestion)
+			if err != nil {
+				return err
+			}
+
+			oldOptions, err := store.GetOptionsByQuestionID(ctx, question.ID)
+			if err != nil {
+				return err
+			}
+			for _, option := range oldOptions {
+				var newOption model.Option
+				newOption.QuestionID = newQuestion.ID
+				newOption.SerialNum = option.SerialNum
+				newImg, err := copySurveyImage(option.Img)
+				if err != nil {
+					return err
+				}
+				newOption.Img = newImg
+				newOption.Content = option.Content
+				newOption.Description = option.Description
+				if err := store.CreateOption(ctx, newOption); err != nil {
+					return err
+				}
+				if newOption.Img != "" {
+					copiedImageURLs = append(copiedImageURLs, newOption.Img)
+				}
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		cleanupCopiedImages()
+		return 0, err
+	}
+	return copiedSurveyID, nil
+}
+
+func copySurveyImage(sourceURL string) (string, error) {
+	if sourceURL == "" {
+		return "", nil
+	}
+
+	objectKey := oss.Client.GetObjectKeyFromUrl(sourceURL)
+	if objectKey == "" {
+		return "", fmt.Errorf("invalid image url: %s", sourceURL)
+	}
+
+	respBody, err := oss.DownloadFile(objectKey)
+	if err != nil {
+		return "", err
+	}
+	defer func() {
+		_ = respBody.Close()
+	}()
+
+	filename := filepath.Base(objectKey)
+	if filename == "." || filename == "/" || filename == "" {
+		filename = "copy"
+	}
+
+	data, err := io.ReadAll(respBody)
+	if err != nil {
+		return "", err
+	}
+
+	uploadResp, err := oss.Client.UploadFile(filename, bytes.NewReader(data), "img", true, true)
+	if err != nil {
+		return "", err
+	}
+	return oss.Client.GetFileURL(uploadResp.Data.ObjectKey, false), nil
+}
+
 
 // UpdateSurveyStatus 更新问卷状态
 func UpdateSurveyStatus(id int64, status int) error {
